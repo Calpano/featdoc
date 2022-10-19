@@ -17,7 +17,6 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static de.xam.featdoc.Util.add;
-import static de.xam.featdoc.kiss.KissDsl.KISS;
 
 public class Universe {
 
@@ -84,7 +83,7 @@ public class Universe {
 
     public Stream<System> systemsCalledFrom(System system) {
         SetMultimap<System,System> systemSystemMap = TreeMultimap.create();
-        KISS.forEachEdge(systemSystemMap::put);
+        forEachEdge(systemSystemMap::put);
         Collection<System> targets = systemSystemMap.get(system);
         return targets.stream().sorted();
     }

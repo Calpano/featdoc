@@ -1,22 +1,17 @@
 package de.xam.featdoc.mermaid;
 
-import de.xam.featdoc.FeatDoc;
 import de.xam.featdoc.LineWriter;
-import de.xam.featdoc.kiss.KissWiki;
 import de.xam.featdoc.mermaid.flowchart.FlowchartDiagram;
 import de.xam.featdoc.mermaid.flowchart.Node;
 import de.xam.featdoc.mermaid.sequence.SequenceDiagram;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
 
 import static de.xam.featdoc.mermaid.MermaidDsl.flowchart;
 import static de.xam.featdoc.mermaid.MermaidDsl.sequence;
-import static de.xam.featdoc.mermaid.sequence.Arrow.DottedAsync;
 import static de.xam.featdoc.mermaid.sequence.Arrow.DottedWithHead;
 import static de.xam.featdoc.mermaid.sequence.Arrow.SolidWithHead;
 import static de.xam.featdoc.mermaid.sequence.Note.Position.RightOf;

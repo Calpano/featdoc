@@ -2,7 +2,6 @@ package de.xam.featdoc;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
-import de.xam.featdoc.kiss.KissDsl;
 import de.xam.featdoc.markdown.IMarkdownCustomizer;
 import de.xam.featdoc.mermaid.MermaidTool;
 import de.xam.featdoc.mermaid.flowchart.FlowchartDiagram;
@@ -31,7 +30,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static de.xam.featdoc.kiss.KissDsl.KISS;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class FeatDoc {
@@ -93,14 +91,14 @@ public class FeatDoc {
         allEvents.forEach(event -> lineWriter.writeLine("* %s", wikiContext.wikiLink(event)));
     }
 
-    private static void eventsToMarkdown(System system, IWikiContext wikiContext, Predicate<Event> eventPredicate, LineWriter lineWriter) {
+    private static void eventsToMarkdown(Universe universe, System system, IWikiContext wikiContext, Predicate<Event> eventPredicate, LineWriter lineWriter) {
         system.events().stream().filter(eventPredicate).sorted((a, b) -> a.label().compareTo(b.label())).forEach(event -> {
             lineWriter.writeLine("* **%s** [%s]%n", event.label(), timing(event));
-            KISS.featuresProducing(event).forEach(producingFeature -> {
+            universe.featuresProducing(event).forEach(producingFeature -> {
                 lineWriter.writeLine("    * <= Aufruf von %s, Feature %s/%s%n", //
                         wikiContext.wikiLink(producingFeature.system()), wikiContext.wikiLink(producingFeature.system()), producingFeature.label());
             });
-            KISS.scenarioStepsProducing(event).forEach(producingScenarioStep -> {
+            universe.scenarioStepsProducing(event).forEach(producingScenarioStep -> {
                 lineWriter.writeLine("    * <= Aufruf von %s, Szenario %s%n", wikiContext.wikiLink(producingScenarioStep.source()), wikiContext.wikiLink(producingScenarioStep.scenario()));
             });
         });
@@ -112,8 +110,8 @@ public class FeatDoc {
             markdownWriter.write(wikiContext.markdownFile(scenario), lineWriter -> scenarioPage(universe, scenario, wikiContext, lineWriter));
         }
         // markdown files for each system, with features, rules, events
-        for (System system : KissDsl.KISS.systems()) {
-            markdownWriter.write(wikiContext.markdownFile(system), lineWriter -> systemPage(system, wikiContext, lineWriter));
+        for (System system : universe.systems()) {
+            markdownWriter.write(wikiContext.markdownFile(system), lineWriter -> systemPage(universe, system, wikiContext, lineWriter));
         }
         // markdown index file
         markdownWriter.write(new File(wikiContext.rootDir(), wikiContext.rootPath() + ".md"), lineWriter -> indexPage(universe, wikiContext, lineWriter));
@@ -134,7 +132,7 @@ public class FeatDoc {
 
         // system dependency map
         TreeMultimap<System, System> multiMap = TreeMultimap.create();
-        KISS.forEachEdge(multiMap::put);
+        universe.forEachEdge(multiMap::put);
         FlowchartDiagram flowchartDiagram = toMermaidFlowchart("Übersicht Aufrufe von Systemen", multiMap, system -> system.wikiName, System::label, false);
         mermaidDiagramBlock(flowchartDiagram, wikiContext.markdownCustomizer(), lineWriter);
     }
@@ -178,7 +176,7 @@ public class FeatDoc {
         }
     }
 
-    public static void systemPage(System system, IWikiContext wikiContext, LineWriter lineWriter) {
+    public static void systemPage(Universe universe, System system, IWikiContext wikiContext, LineWriter lineWriter) {
         lineWriter.writeLine("# System: %s", system.label());
         lineWriter.writeToc();
         lineWriter.writeLine("## Features");
@@ -203,19 +201,19 @@ public class FeatDoc {
             }
         }
         lineWriter.writeSection("Eingehende API-Aufrufe");
-        eventsToMarkdown(system, wikiContext, Event::isSynchronous, lineWriter);
+        eventsToMarkdown(universe, system, wikiContext, Event::isSynchronous, lineWriter);
 
         lineWriter.writeSection("Eingehende Events");
-        eventsToMarkdown(system, wikiContext, Event::isAsynchronous, lineWriter);
+        eventsToMarkdown(universe, system, wikiContext, Event::isAsynchronous, lineWriter);
 
         lineWriter.writeSection("Systemlandschaft");
-        lineWriter.writeLine("* Aufrufe von: %s", KISS.systemsCalling(system).map(wikiContext::wikiLink).collect(Collectors.joining(", ")));
-        lineWriter.writeLine("* Aufrufe zu: %s", KISS.systemsCalledFrom(system).map(wikiContext::wikiLink).collect(Collectors.joining(", ")));
+        lineWriter.writeLine("* Aufrufe von: %s", universe.systemsCalling(system).map(wikiContext::wikiLink).collect(Collectors.joining(", ")));
+        lineWriter.writeLine("* Aufrufe zu: %s", universe.systemsCalledFrom(system).map(wikiContext::wikiLink).collect(Collectors.joining(", ")));
 
         // system dependency map
         TreeMultimap<System, System> multiMap = TreeMultimap.create();
-        KISS.systemsCalling(system).forEach(source-> multiMap.put(source, system));
-        KISS.systemsCalledFrom(system).forEach(target-> multiMap.put(system,target));
+        universe.systemsCalling(system).forEach(source -> multiMap.put(source, system));
+        universe.systemsCalledFrom(system).forEach(target -> multiMap.put(system, target));
         FlowchartDiagram flowchartDiagram = toMermaidFlowchart("Übersicht Aufrufe von Systemen", multiMap, s -> s.wikiName, System::label, false);
         mermaidDiagramBlock(flowchartDiagram, wikiContext.markdownCustomizer(), lineWriter);
     }
