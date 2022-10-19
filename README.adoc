@@ -1,0 +1,3 @@
+= FeatDoc - Feature Documentation as Code
+
+Soon we will publish more details, sure.
