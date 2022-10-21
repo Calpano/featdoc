@@ -1,3 +1,14 @@
 = FeatDoc - Feature Documentation as Code
 
 Soon we will publish more details, sure.
+
+.Maven Coordinates
+----
+<!-- https://mvnrepository.com/artifact/de.xam/featdoc -->
+<dependency>
+    <groupId>de.xam</groupId>
+    <artifactId>featdoc</artifactId>
+    <version>1.0.0</version>
+</dependency>
+----
+
