@@ -35,7 +35,9 @@ public interface LineWriter {
     }
 
     default void writeToc() {
+        writeLine("");
         writeLine("[[_TOC_]]" );
+        writeLine("");
     }
 
     /**
