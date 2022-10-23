@@ -1,9 +1,40 @@
 package de.xam.featdoc.markdown;
 
+import de.xam.featdoc.LineWriter;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class MarkdownTool {
+
+    public static class Table {
+
+        final LineWriter lineWriter;
+        private int cols = -1;
+
+        public Table(LineWriter lineWriter) {
+            this.lineWriter = lineWriter;
+        }
+
+        public Table headerSeparator() {
+            lineWriter.writeLine("|" + IntStream.range(0, cols).mapToObj(i -> "---").collect(Collectors.joining("|")) + "|");
+            return this;
+        }
+
+        public Table row(String... args) {
+            if(cols > 0 && cols!=args.length)
+                throw new IllegalArgumentException("Table rows must have some lenght");
+            lineWriter.writeLine("|" + Stream.of(args).collect(Collectors.joining("|")) + "|");
+            this.cols = args.length;
+            return this;
+        }
+
+
+    }
+
     public static String filename(String title) {
         String enc = URLEncoder.encode(title, StandardCharsets.UTF_8);
         // re-decode some simple things which ARE allowed in filenames

@@ -27,13 +27,13 @@ public class Universe {
     /**
      * @param feature
      * @param rule
-     * @param event result of applying a rule or scenario step
+     * @param rulePart result of applying a rule or scenario step
      * @param depth             0 = is defined just like this in the scenario; > 0: how indirect the action is triggered
      * @param causeFromScenario
      * @param source
      * @param target
      */
-    public record ResultStep(Feature feature, Rule rule, Rule.Event event, int depth, ScenarioStep causeFromScenario, System source, System target) {
+    public record ResultStep(Feature feature, Rule rule, Rule.RulePart rulePart, int depth, ScenarioStep causeFromScenario, System source, System target) {
 
         public boolean isScenario() {
             return depth == 0;
@@ -65,7 +65,7 @@ public class Universe {
     }
 
     public Stream<ScenarioStep> scenarioStepsProducing(Message message) {
-        return scenarios.stream().flatMap(scenario -> scenario.steps().stream()).filter(scenarioStep -> scenarioStep.event().message().equals(message));
+        return scenarios.stream().flatMap(scenario -> scenario.steps().stream()).filter(scenarioStep -> scenarioStep.rulePart().message().equals(message));
     }
 
     public List<Scenario> scenarios() {
@@ -107,9 +107,9 @@ public class Universe {
         resultingSteps.stream().flatMap(rs -> Stream.of(rs.source, rs.target)).distinct().sorted().forEach(system -> sequenceDiagram.participant(system.id, system.label));
         // steps
         resultingSteps.forEach(step -> sequenceDiagram.step(step.source.id,
-                step.event.message().timing() == Timing.Synchronous ? Arrow.SolidWithHead : Arrow.DottedAsync,
+                step.rulePart.message().timing() == Timing.Synchronous ? Arrow.SolidWithHead : Arrow.DottedAsync,
                 step.target.id,
-                MarkdownTool.format(step.event.message().label() + (step.feature == null ? "" : " [" + step.feature.label + "]"))));
+                MarkdownTool.format(step.rulePart.message().label() + (step.feature == null ? "" : " [" + step.feature.label + "]"))));
         return sequenceDiagram;
     }
 
@@ -140,21 +140,30 @@ public class Universe {
         List<ResultStep> resultingSteps = new ArrayList<>();
         for (ScenarioStep scenarioStep : scenario.steps()) {
             // is anything triggered?
-            reactOnEventAndMaterializeActions(scenarioStep.event(), scenarioStep.source(), scenarioStep.target(), scenarioStep, 0, resultingSteps::add);
+            reactOnEventAndMaterializeActions(scenarioStep.rulePart(), scenarioStep.source(), scenarioStep.target(), scenarioStep, 0, resultingSteps::add);
         }
         return resultingSteps;
     }
 
-    private void reactOnEventAndMaterializeActions(Rule.Event triggerEvent, System source, @Nullable System target, ScenarioStep causeFromScenario, int depth, Consumer<ResultStep> resultConsumer) {
+    /**
+     *
+     * @param triggerRulePart a scenario step or rule action
+     * @param source sending system
+     * @param target receiving system
+     * @param causeFromScenario initial scenario step
+     * @param depth in tree from initial scenario step
+     * @param resultConsumer
+     */
+    private void reactOnEventAndMaterializeActions(Rule.RulePart triggerRulePart, System source, @Nullable System target, ScenarioStep causeFromScenario, int depth, Consumer<ResultStep> resultConsumer) {
         if (target != null) {
-            resultConsumer.accept(new ResultStep(null, null, triggerEvent, depth, causeFromScenario, source, target));
+            resultConsumer.accept(new ResultStep(null, null, triggerRulePart, depth, causeFromScenario, source, target));
         }
         for (System system : systems()) {
             for (Feature feature : system.features) {
                 for (Rule rule : feature.rules) {
-                    if (rule.trigger.equals(triggerEvent)) {
+                    if (rule.trigger.isTriggeredBy(triggerRulePart.message())) {
                         for (Rule.Action action : rule.actions) {
-                            resultConsumer.accept(new ResultStep(feature, rule, action, depth+1, causeFromScenario, triggerEvent.message().system(), action.outgoingMessage().system()));
+                            resultConsumer.accept(new ResultStep(feature, rule, action, depth+1, causeFromScenario, triggerRulePart.message().system(), action.outgoingMessage().system()));
                             // recursively react
                             reactOnEventAndMaterializeActions(action, action.outgoingMessage().system(), null, causeFromScenario, depth + 1, resultConsumer);
                         }

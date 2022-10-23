@@ -121,12 +121,12 @@ public class StringTree implements Comparable<StringTree> {
     }
 
     public void toMarkdownList(LineWriter lineWriter) {
-        toMarkdownList(0, '*', lineWriter);
+        toMarkdownList(0, "*", lineWriter);
     }
 
     public static void toMarkdownList(List<StringTree> trees, LineWriter lineWriter) {
         for (StringTree tree : trees) {
-            tree.toMarkdownList(0, '*', lineWriter);
+            tree.toMarkdownList(0, "*", lineWriter);
         }
     }
 
@@ -152,7 +152,7 @@ public class StringTree implements Comparable<StringTree> {
         }
     }
 
-    private void toMarkdownList(int depth, char marker, LineWriter lineWriter) {
+    private void toMarkdownList(int depth, String marker, LineWriter lineWriter) {
         String pre = "";
         for (int i = 0; i < depth; i++) {
             pre += INDENT;

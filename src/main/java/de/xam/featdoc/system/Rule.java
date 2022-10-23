@@ -10,42 +10,58 @@ import java.util.stream.Stream;
 
 public class Rule {
 
-    public interface Event {
+    public interface RulePart {
         String comment();
 
         Message message();
     }
 
-    interface RuleBuilder {
+    public interface RuleBuilder {
 
         RuleBuilder feature(Feature feature);
 
         RuleWithTriggerBuilder trigger(Message triggerMessage, String triggerComment);
     }
 
-    interface RuleWithTriggerBuilder {
+    public interface RuleWithTriggerBuilder {
 
+
+        RuleWithTriggerBuilder action(Message action, String comment);
 
         RuleWithTriggerBuilder actions(Message... actions);
 
-        Rule build();
+        Feature build();
     }
 
-    public record Trigger(Message incomingMessage, @Nullable String comment) implements Event {
+    public record Trigger(Message incomingMessage, @Nullable String comment) implements RulePart {
+        public boolean isTriggeredBy(Message message) {
+            return message().label().equals(message.label()) && message().system().equals(message.system());
+        }
+
         @Override
         public Message message() {
             return incomingMessage();
         }
+
+        public Trigger {
+            if (incomingMessage == null)
+                throw new IllegalArgumentException();
+        }
     }
 
-    public record Action(Message outgoingMessage, @Nullable String comment) implements Event {
+    public record Action(Message outgoingMessage, @Nullable String comment) implements RulePart {
         @Override
         public Message message() {
             return outgoingMessage();
         }
+
+        public Action {
+            if (outgoingMessage == null)
+                throw new IllegalArgumentException();
+        }
     }
 
-    static class InternalRuleBuilder implements RuleBuilder, RuleWithTriggerBuilder {
+   private static class InternalRuleBuilder implements RuleBuilder, RuleWithTriggerBuilder {
 
         private final List<Action> actions = new ArrayList<>();
         private Feature feature;
@@ -60,8 +76,9 @@ public class Rule {
         }
 
         @Override
-        public Rule build() {
-            return new Rule(feature, this.trigger, actions);
+        public Feature build() {
+            feature.rules.add( new Rule(feature, this.trigger, actions));
+            return feature;
         }
 
         @Override
@@ -81,7 +98,8 @@ public class Rule {
             return this;
         }
 
-        private RuleWithTriggerBuilder action(Message message, String comment) {
+        @Override
+        public RuleWithTriggerBuilder action(Message message, String comment) {
             actions.add(new Action(message, comment));
             return this;
         }

@@ -1,7 +1,11 @@
 package de.xam.featdoc;
 
+import de.xam.featdoc.markdown.MarkdownTool;
+
 import java.io.IOException;
 import java.io.Writer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface LineWriter {
 
@@ -51,6 +55,10 @@ public interface LineWriter {
     default void writeLine(String line, String... args) {
         write(line, args);
         write("\n");
+    }
+
+    default MarkdownTool.Table table() {
+        return new MarkdownTool.Table(this);
     }
 
 }

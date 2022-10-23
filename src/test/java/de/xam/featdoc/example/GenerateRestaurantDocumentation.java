@@ -8,7 +8,7 @@ import de.xam.featdoc.wiki.IWikiContext;
 import java.io.File;
 import java.io.IOException;
 
-import static de.xam.featdoc.example.SystemsAndScenarios.Systems.UNIVERSE;
+import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.UNIVERSE;
 
 public class GenerateRestaurantDocumentation {
 
@@ -44,9 +44,9 @@ public class GenerateRestaurantDocumentation {
   }
 
   public static void main(String[] args) throws IOException {
-    SystemsAndScenarios.defineSystems();
+    RestaurantSystemsAndScenarios.defineSystems();
     // let the machine roll by using scenarios
-    SystemsAndScenarios.defineScenarios();
+    RestaurantSystemsAndScenarios.defineScenarios();
     generateFiles();
   }
 

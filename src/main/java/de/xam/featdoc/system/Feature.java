@@ -1,7 +1,6 @@
 package de.xam.featdoc.system;
 
 import de.xam.featdoc.I18n;
-import de.xam.featdoc.Util;
 import de.xam.featdoc.wiki.IWikiLink;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,15 +24,6 @@ public class Feature implements IWikiLink {
         return producedEvents().anyMatch(message::equals);
     }
 
-
-    @Override
-    public @Nullable String wikiFolder(I18n i18n) {
-        return system.wikiFolder(i18n);
-    }
-
-
-
-
     public String label() {
         return label;
     }
@@ -43,20 +33,20 @@ public class Feature implements IWikiLink {
     }
 
     public Feature rule(Message trigger, Message... actions) {
-        return rule(trigger,null,actions);
-    }
-
-    public Feature rule(Message trigger, String triggerComment, Message... actions) {
         if (actions == null || actions.length == 0)
             throw new IllegalArgumentException("No actions given");
-        Util.add(rules, rule().trigger(trigger,triggerComment).actions(actions).build());
-        return this;
+        Rule.RuleWithTriggerBuilder builder = rule().feature(this).trigger(trigger, null);
+        Stream.of(actions).forEach(action -> builder.action(action, null));
+        return builder.build();
+    }
+
+    public Rule.RuleWithTriggerBuilder rule(Message trigger, String comment) {
+        return rule().trigger(trigger, comment);
     }
 
     public Rule.RuleBuilder rule() {
         return Rule.builder(this);
     }
-
 
     public List<Rule> rules() {
         return Collections.unmodifiableList(rules);
@@ -68,6 +58,11 @@ public class Feature implements IWikiLink {
 
     public String toString() {
         return label;
+    }
+
+    @Override
+    public @Nullable String wikiFolder(I18n i18n) {
+        return system.wikiFolder(i18n);
     }
 
 }

@@ -4,15 +4,15 @@ import de.xam.featdoc.system.Message;
 import de.xam.featdoc.system.System;
 import de.xam.featdoc.system.Universe;
 
-import static de.xam.featdoc.example.SystemsAndScenarios.Systems.ACC;
-import static de.xam.featdoc.example.SystemsAndScenarios.Systems.CM;
-import static de.xam.featdoc.example.SystemsAndScenarios.Systems.CUSTOMER;
-import static de.xam.featdoc.example.SystemsAndScenarios.Systems.MOC;
-import static de.xam.featdoc.example.SystemsAndScenarios.Systems.POS;
-import static de.xam.featdoc.example.SystemsAndScenarios.Systems.WAITER;
+import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.ACC;
+import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.CM;
+import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.CUSTOMER;
+import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.MOC;
+import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.POS;
+import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.WAITER;
 
 
-public class SystemsAndScenarios {
+public class RestaurantSystemsAndScenarios {
 
     interface Systems {
         Universe UNIVERSE = new Universe();
@@ -64,8 +64,9 @@ public class SystemsAndScenarios {
         Message eventMilkConsumed = CM.eventAsync("milk consumed");
 
         static void define() {
-            WAITER.feature("Coffee Making") //
-                    .rule(espresso, eventBeansConsumed) //
+            WAITER.feature("Coffee Making")
+                    // example with comments
+                    .rule(espresso, "100% Arabica").action(eventBeansConsumed,"Or error on missing beans").build()
                     .rule(espressoDouble, eventBeansConsumed, eventBeansConsumed) //
                     .rule(cappuccino, eventBeansConsumed, eventMilkConsumed) //
             ;
@@ -103,7 +104,7 @@ public class SystemsAndScenarios {
     public static void defineScenarios() {
         Systems.UNIVERSE.scenario("Lunch-Customer (in a hurry)") //
                 .syncCall(CUSTOMER, WAITER, Waiter.orderEspresso)//
-                .syncCall(CUSTOMER, WAITER, Waiter.customerWantsToPay) //
+                .syncCall(CUSTOMER, WAITER, Waiter.customerWantsToPay, "Today no credit cards") //
         ;
     }
 

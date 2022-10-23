@@ -3,6 +3,7 @@ package de.xam.featdoc;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
 import de.xam.featdoc.markdown.IMarkdownCustomizer;
+import de.xam.featdoc.markdown.MarkdownTool;
 import de.xam.featdoc.markdown.StringTree;
 import de.xam.featdoc.mermaid.MermaidTool;
 import de.xam.featdoc.mermaid.flowchart.FlowchartDiagram;
@@ -168,41 +169,44 @@ public class FeatDoc {
         mermaidDiagramBlock(sequenceDiagram, wikiContext.markdownCustomizer(), lineWriter);
 
         lineWriter.writeSection(wikiContext.i18n(Term.scenarioSteps));
+        legend(wikiContext,lineWriter);
         List<Universe.ResultStep> resultingSteps = universe.computeResultingSteps(scenario);
+        MarkdownTool.Table table = lineWriter.table()
+                .row("Nr", "From System","   ", "To System", "Message", "Comment", "Rule Definition")
+                .headerSeparator();
+        int rowNr = 1;
         for (Universe.ResultStep rs : resultingSteps) {
-            if (rs.isScenario()) {
-                // initial cause from scenario
-                lineWriter.writeLine("* %s --%s--> %s: **%s**",
-                        wikiContext.wikiLink(rs.source()),
-                        timing(rs.event().message(),wikiContext),
-                        wikiContext.wikiLink(rs.target()),
-                        rs.event().message().label());
-            } else {
-                // resulting cascade
-                lineWriter.writeLine("    * %s --%s--> %s: **%s** (%s/%s)",
-                        wikiContext.wikiLink(rs.source()),
-                        timing(rs.event().message(),wikiContext),
-                        wikiContext.wikiLink(rs.target()),
-                        rs.event().message().label(),
-                        wikiContext.wikiLink(rs.feature().system()),
-                        rs.feature().label());
-            }
+            table.row(""+rowNr++,
+                    wikiContext.wikiLink(rs.source()),
+                    rs.rulePart().message().isSynchronous() ? ARROW_LEFT_RIGHT_SOLID : ARROW_LEFT_RIGHT_DASHED,
+                    wikiContext.wikiLink(rs.target()),
+                    rs.rulePart().message().label(),
+                    rs.rulePart().comment() == null ? "   ":"*"+rs.rulePart().comment()+"*",
+                    rs.isScenario()? "**Scenario**":
+                        String.format("(%s/%s)", wikiContext.wikiLink(rs.feature().system()), rs.feature().label())
+            );
         }
 
         lineWriter.writeSection(wikiContext.i18n(Term.scenarioTree));
+        legend(wikiContext,lineWriter);
+        List<StringTree> trees = universe.toTrees(scenario, (rs) ->
+                String.format("%s %s %s: **%s** (%s)",
+                        wikiContext.wikiLink(rs.source()),
+                        rs.rulePart().message().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
+                        wikiContext.wikiLink(rs.target()),
+                        rs.rulePart().message().label(),
+                        rs.feature() == null ? wikiContext.i18n(Term.scenario) : wikiContext.wikiLink(rs.feature().system()) + "/" + rs.feature().label()
+        ));
+        StringTree.toMarkdownList(trees,lineWriter);
+    }
+
+    private static void legend(IWikiContext wikiContext, LineWriter lineWriter) {
         lineWriter.write("**%s**: ",wikiContext.i18n(Term.legend));
         lineWriter.write("(%s) %s",ARROW_LEFT_RIGHT_SOLID, wikiContext.i18n(Term.synchronous));
         lineWriter.write(" | ");
         lineWriter.write("(%s) %s",ARROW_LEFT_RIGHT_DASHED, wikiContext.i18n(Term.asynchronous));
         lineWriter.writeLine("");
         lineWriter.writeLine("");
-        List<StringTree> trees = universe.toTrees(scenario, (rs) -> String.format("%s %s %s: **%s** (%s)", wikiContext.wikiLink(rs.source()),
-                rs.event().message().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
-                wikiContext.wikiLink(rs.target()),
-                rs.event().message().label(),
-                rs.feature() == null ? wikiContext.i18n(Term.scenario) : wikiContext.wikiLink(rs.feature().system()) + "/" + rs.feature().label()
-        ));
-        StringTree.toMarkdownList(trees,lineWriter);
     }
 
     static final String ARROW_RIGHT_LEFT_SOLID = "\u2B05";
