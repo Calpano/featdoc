@@ -1,5 +1,7 @@
 package de.xam.featdoc.system;
 
+import de.xam.featdoc.I18n;
+import de.xam.featdoc.Term;
 import de.xam.featdoc.markdown.MarkdownTool;
 import de.xam.featdoc.wiki.IWikiLink;
 import org.jetbrains.annotations.Nullable;
@@ -55,8 +57,8 @@ public class Scenario implements IWikiLink {
         return Collections.unmodifiableList(steps);
     }
 
-    public Scenario syncCall(System source, System target, String eventName) {
-        return step(source, target, new Message(target, Timing.Synchronous, eventName));
+    public Scenario syncCall(System source, System target, String callMessage) {
+        return step(source, target, new Message(target, Timing.Synchronous, callMessage));
     }
 
     /**
@@ -83,8 +85,8 @@ public class Scenario implements IWikiLink {
     }
 
     @Override
-    public @Nullable String wikiFolder() {
-        return "Szenario";
+    public @Nullable String wikiFolder(I18n i18n) {
+        return i18n.resolve(Term.scenario);
     }
 
 }

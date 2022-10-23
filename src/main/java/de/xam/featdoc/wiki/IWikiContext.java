@@ -26,7 +26,7 @@ public interface IWikiContext {
     }
 
     default String path(IWikiFile wikiFile) {
-        return (rootPath() == null ? "" : rootPath() + "/") + wikiFile.wikiLink();
+        return (rootPath() == null ? "" : rootPath() + "/") + wikiFile.wikiLink(i18n());
     }
 
     File rootDir();

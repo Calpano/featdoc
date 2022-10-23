@@ -51,27 +51,31 @@ public class FeatDoc {
 
     private static void debugPage(Universe universe, IWikiContext wikiContext, LineWriter lineWriter) {
         lineWriter.writeToc();
+        lineWriter.writeLine("# Debug Infos");
 
-        // unused events?
+        lineWriter.writeLine("## Events, not used in any rules");
         Set<Message> allMessages = universe.systems().stream().flatMap(system -> system.events().stream()).collect(Collectors.toSet());
         Set<Message> usedInRules = new HashSet<>();
         universe.systems().stream().flatMap(System::rules).forEach(rule -> {
             usedInRules.add(rule.trigger());
             usedInRules.addAll(rule.actions());
         });
-        lineWriter.writeLine("# Events, not used in any rules");
         allMessages.removeAll(usedInRules);
-        allMessages.forEach(event -> lineWriter.writeLine("* %s", wikiContext.wikiLink(event)));
+        allMessages.forEach(message -> lineWriter.writeLine("* %s ([%s](%s))",
+                message.label(),
+                message.system().label(),
+                message.system().wikiLink(wikiContext.i18n())));
 
-        // rules, which never trigger?
+        lineWriter.writeLine("## Rules, not used in any scenario");
         Set<Rule> allRules = universe.systems().stream().flatMap(System::rules).collect(Collectors.toSet());
-        Set<Rule> usedInScenarios = new HashSet<>();
-        universe.scenarios().stream().flatMap(scenario -> scenario.steps().stream()).forEach(step -> {
-            // TODO ...
-        });
-        lineWriter.writeLine("# Rules, not used in any scenario");
+        Set<Rule> usedInScenarios =
+        universe.scenarios().stream().flatMap(scenario -> universe.computeResultingSteps(scenario).stream()).map(Universe.ResultStep::rule).collect(Collectors.toSet());
         allRules.removeAll(usedInScenarios);
-        allMessages.forEach(event -> lineWriter.writeLine("* %s", wikiContext.wikiLink(event)));
+        allRules.forEach(rule -> lineWriter.writeLine("* Feature *%s* ([%s](%s)): No calls to trigger **%s**",
+                rule.feature().label(),
+                rule.feature().system().label(),
+                rule.feature().system().wikiLink(wikiContext.i18n()),
+                rule.trigger().label()));
     }
 
     private static void eventsToMarkdown(Universe universe, System system, IWikiContext wikiContext, Predicate<Message> eventPredicate, LineWriter lineWriter) {

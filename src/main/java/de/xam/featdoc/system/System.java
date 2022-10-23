@@ -1,5 +1,7 @@
 package de.xam.featdoc.system;
 
+import de.xam.featdoc.I18n;
+import de.xam.featdoc.Term;
 import de.xam.featdoc.wiki.IWikiLink;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -11,7 +13,6 @@ import java.util.stream.Stream;
 
 public class System implements IWikiLink, Comparable<System> {
 
-    public static final String WIKI_FOLDER = "System";
     public final String wikiName;
     final String id;
     final String label;
@@ -75,8 +76,8 @@ public class System implements IWikiLink, Comparable<System> {
     }
 
     @Override
-    public @Nullable String wikiFolder() {
-        return WIKI_FOLDER;
+    public @Nullable String wikiFolder(I18n i18n) {
+        return i18n.resolve(Term.system);
     }
 
     public String toString() {

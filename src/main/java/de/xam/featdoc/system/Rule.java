@@ -9,12 +9,14 @@ import java.util.stream.Stream;
 
 public class Rule {
 
+    final Feature feature;
     final Message[] actions;
     final Message trigger;
     @Nullable
     private String comment;
 
-    public Rule(Message trigger, Message... actions) {
+    public Rule(Feature feature, Message trigger, Message... actions) {
+        this.feature = feature;
         this.trigger = trigger;
         this.actions = actions;
     }
@@ -30,6 +32,10 @@ public class Rule {
 
     public String comment() {
         return comment;
+    }
+
+    public Feature feature() {
+        return feature;
     }
 
     public Stream<Message> producedEvents() {

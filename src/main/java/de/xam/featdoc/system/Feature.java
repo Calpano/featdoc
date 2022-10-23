@@ -1,5 +1,6 @@
 package de.xam.featdoc.system;
 
+import de.xam.featdoc.I18n;
 import de.xam.featdoc.Util;
 import de.xam.featdoc.wiki.IWikiLink;
 import org.jetbrains.annotations.Nullable;
@@ -26,8 +27,8 @@ public class Feature implements IWikiLink {
 
 
     @Override
-    public @Nullable String wikiFolder() {
-        return system.wikiFolder();
+    public @Nullable String wikiFolder(I18n i18n) {
+        return system.wikiFolder(i18n);
     }
 
 
@@ -42,12 +43,12 @@ public class Feature implements IWikiLink {
     }
 
     public Feature rule(Message trigger, Message... actions) {
-        Util.add(rules, new Rule(trigger, actions));
+        Util.add(rules, new Rule(this, trigger, actions));
         return this;
     }
 
     public Feature rule(Message trigger, String comment, Message... actions) {
-        Util.add(rules, new Rule(trigger, actions).comment(comment));
+        Util.add(rules, new Rule(this, trigger, actions).comment(comment));
         return this;
     }
 
