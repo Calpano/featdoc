@@ -19,7 +19,9 @@ class StringTreeTest {
         StringWriter sw = new StringWriter();
         tree.toMarkdownList(LineWriter.wrap(sw));
         String expect ="* root\n" +
-                "    * -> [Foo] Aufruf -> [Bar] Folgeaufruf\n" +
+                "    * -> [Foo] Aufruf\n" +
+                "        * -> [Bar] Folgeaufruf\n" +
+                "            * -> [Baz] weitere Folge\n" +
                 "    * -> [B] brancht auf\n" +
                 "        * -> [C] Archiv\n" +
                 "        * -> [D] passiert auch noch\n";
