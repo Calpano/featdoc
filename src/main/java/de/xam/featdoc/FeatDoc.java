@@ -57,8 +57,8 @@ public class FeatDoc {
         Set<Message> allMessages = universe.systems().stream().flatMap(system -> system.events().stream()).collect(Collectors.toSet());
         Set<Message> usedInRules = new HashSet<>();
         universe.systems().stream().flatMap(System::rules).forEach(rule -> {
-            usedInRules.add(rule.trigger());
-            usedInRules.addAll(rule.actions());
+            usedInRules.add(rule.trigger().incomingMessage());
+            usedInRules.addAll(rule.actions().stream().map(Rule.Action::outgoingMessage).collect(Collectors.toSet()));
         });
         allMessages.removeAll(usedInRules);
         allMessages.forEach(message -> lineWriter.writeLine("* %s ([%s](%s))",
@@ -75,7 +75,7 @@ public class FeatDoc {
                 rule.feature().label(),
                 rule.feature().system().label(),
                 rule.feature().system().wikiLink(wikiContext.i18n()),
-                rule.trigger().label()));
+                rule.trigger().incomingMessage().label()));
     }
 
     private static void eventsToMarkdown(Universe universe, System system, IWikiContext wikiContext, Predicate<Message> eventPredicate, LineWriter lineWriter) {
@@ -174,16 +174,16 @@ public class FeatDoc {
                 // initial cause from scenario
                 lineWriter.writeLine("* %s --%s--> %s: **%s**",
                         wikiContext.wikiLink(rs.source()),
-                        timing(rs.action(),wikiContext),
+                        timing(rs.event().message(),wikiContext),
                         wikiContext.wikiLink(rs.target()),
-                        rs.action().label());
+                        rs.event().message().label());
             } else {
                 // resulting cascade
                 lineWriter.writeLine("    * %s --%s--> %s: **%s** (%s/%s)",
                         wikiContext.wikiLink(rs.source()),
-                        timing(rs.action(),wikiContext),
+                        timing(rs.event().message(),wikiContext),
                         wikiContext.wikiLink(rs.target()),
-                        rs.action().label(),
+                        rs.event().message().label(),
                         wikiContext.wikiLink(rs.feature().system()),
                         rs.feature().label());
             }
@@ -197,9 +197,9 @@ public class FeatDoc {
         lineWriter.writeLine("");
         lineWriter.writeLine("");
         List<StringTree> trees = universe.toTrees(scenario, (rs) -> String.format("%s %s %s: **%s** (%s)", wikiContext.wikiLink(rs.source()),
-                rs.action().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
+                rs.event().message().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
                 wikiContext.wikiLink(rs.target()),
-                rs.action().label(),
+                rs.event().message().label(),
                 rs.feature() == null ? wikiContext.i18n(Term.scenario) : wikiContext.wikiLink(rs.feature().system()) + "/" + rs.feature().label()
         ));
         StringTree.toMarkdownList(trees,lineWriter);
@@ -233,20 +233,20 @@ public class FeatDoc {
                         * %s: %s **%s** in %s [%s]""",
                         wikiContext.i18n(Term.rule),
                         wikiContext.i18n(Term.if_),
-                        rule.trigger().label(),
-                        rule.trigger().system().label(),
-                        timing(rule.trigger(),wikiContext));
-                for (Message action : rule.actions()) {
+                        rule.trigger().incomingMessage().label(),
+                        rule.trigger().incomingMessage().system().label(),
+                        timing(rule.trigger().incomingMessage(),wikiContext));
+                for (Rule.Action action : rule.actions()) {
                     lineWriter.writeLine("    * %s %s **%s** in %s [%s]",
                             ARROW_LEFT_RIGHT_RULE,
                             wikiContext.i18n(Term.then_),
-                            action.label(),
-                            wikiContext.wikiLink(action.system()),
-                            timing(action,wikiContext)
+                            action.outgoingMessage().label(),
+                            wikiContext.wikiLink(action.outgoingMessage().system()),
+                            timing(action.outgoingMessage(),wikiContext)
                     );
                 }
-                if (rule.comment() != null) {
-                    lineWriter.writeLine("    * NOTE: *%s*", rule.comment());
+                if (rule.trigger().comment() != null) {
+                    lineWriter.writeLine("    * NOTE: *%s*", rule.trigger().comment());
                 }
             }
         }

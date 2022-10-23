@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 
 public class Scenario implements IWikiLink {
     private final String label;
-    private final List<Step> steps = new ArrayList<>();
+    private final List<ScenarioStep> scenarioSteps = new ArrayList<>();
     private final Universe universe;
     private Map<Condition, Condition.Variant> variants = new HashMap<>();
 
@@ -48,13 +48,13 @@ public class Scenario implements IWikiLink {
     }
 
     public Scenario step(System source, System target, Message message) {
-        Step step = new Step(this, source, target, message);
-        steps.add(step);
+        ScenarioStep scenarioStep = new ScenarioStep(this, source, target, new Rule.Trigger(  message,null));
+        scenarioSteps.add(scenarioStep);
         return this;
     }
 
-    public List<Step> steps() {
-        return Collections.unmodifiableList(steps);
+    public List<ScenarioStep> steps() {
+        return Collections.unmodifiableList(scenarioSteps);
     }
 
     public Scenario syncCall(System source, System target, String callMessage) {
@@ -72,7 +72,7 @@ public class Scenario implements IWikiLink {
 
     /** distinct and sorted */
     public Stream<System> systems() {
-        return steps().stream().flatMap(step -> Stream.of(step.source(), step.target())).distinct().sorted();
+        return steps().stream().flatMap(scenarioStep -> Stream.of(scenarioStep.source(), scenarioStep.target())).distinct().sorted();
     }
 
     public Scenario variant(Condition.Variant variant) {

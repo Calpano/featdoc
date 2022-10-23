@@ -43,14 +43,20 @@ public class Feature implements IWikiLink {
     }
 
     public Feature rule(Message trigger, Message... actions) {
-        Util.add(rules, new Rule(this, trigger, actions));
+        return rule(trigger,null,actions);
+    }
+
+    public Feature rule(Message trigger, String triggerComment, Message... actions) {
+        if (actions == null || actions.length == 0)
+            throw new IllegalArgumentException("No actions given");
+        Util.add(rules, rule().trigger(trigger,triggerComment).actions(actions).build());
         return this;
     }
 
-    public Feature rule(Message trigger, String comment, Message... actions) {
-        Util.add(rules, new Rule(this, trigger, actions).comment(comment));
-        return this;
+    public Rule.RuleBuilder rule() {
+        return Rule.builder(this);
     }
+
 
     public List<Rule> rules() {
         return Collections.unmodifiableList(rules);
