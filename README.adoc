@@ -11,4 +11,4 @@ Soon we will publish more details, sure.
     <version>1.0.0</version>
 </dependency>
 ----
-
+Check latest version: https://mvnrepository.com/artifact/de.xam/featdoc[]
