@@ -1,9 +1,6 @@
 package de.xam.featdoc.system;
 
-import de.xam.featdoc.wiki.IWikiLink;
-import org.jetbrains.annotations.Nullable;
-
-public record Event(System system, Timing timing, String label) implements IWikiLink {
+public record Message(System system, Timing timing, String label) {
 
     public boolean isAsynchronous() {
         return timing == Timing.Asynchronous;
@@ -17,12 +14,7 @@ public record Event(System system, Timing timing, String label) implements IWiki
     public String label() {
         return label;
     }
-
-    @Override
-    public @Nullable String wikiFolder() {
-        return "Event";
-    }
-
+    
     public String toString() {
         return system + "-" + label + "(" + (timing == Timing.Synchronous ? "sync" : "async") + ")";
     }

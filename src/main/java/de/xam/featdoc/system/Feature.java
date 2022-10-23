@@ -1,8 +1,6 @@
 package de.xam.featdoc.system;
 
 import de.xam.featdoc.Util;
-import de.xam.featdoc.markdown.MarkdownTool;
-import de.xam.featdoc.wiki.IWikiContext;
 import de.xam.featdoc.wiki.IWikiLink;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,8 +20,8 @@ public class Feature implements IWikiLink {
         this.system = system;
     }
 
-    public boolean isProducing(Event event) {
-        return producedEvents().anyMatch(event::equals);
+    public boolean isProducing(Message message) {
+        return producedEvents().anyMatch(message::equals);
     }
 
 
@@ -39,16 +37,16 @@ public class Feature implements IWikiLink {
         return label;
     }
 
-    public Stream<Event> producedEvents() {
+    public Stream<Message> producedEvents() {
         return rules.stream().flatMap(Rule::producedEvents);
     }
 
-    public Feature rule(Event trigger, Event... actions) {
+    public Feature rule(Message trigger, Message... actions) {
         Util.add(rules, new Rule(trigger, actions));
         return this;
     }
 
-    public Feature rule(Event trigger, String comment, Event... actions) {
+    public Feature rule(Message trigger, String comment, Message... actions) {
         Util.add(rules, new Rule(trigger, actions).comment(comment));
         return this;
     }

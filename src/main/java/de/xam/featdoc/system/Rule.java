@@ -9,17 +9,17 @@ import java.util.stream.Stream;
 
 public class Rule {
 
-    final Event[] actions;
-    final Event trigger;
+    final Message[] actions;
+    final Message trigger;
     @Nullable
     private String comment;
 
-    public Rule(Event trigger, Event... actions) {
+    public Rule(Message trigger, Message... actions) {
         this.trigger = trigger;
         this.actions = actions;
     }
 
-    public List<Event> actions() {
+    public List<Message> actions() {
         return Collections.unmodifiableList(Arrays.asList(actions));
     }
 
@@ -32,7 +32,7 @@ public class Rule {
         return comment;
     }
 
-    public Stream<Event> producedEvents() {
+    public Stream<Message> producedEvents() {
         return Stream.of(actions);
     }
 
@@ -40,7 +40,7 @@ public class Rule {
         return trigger + "=>{" + Arrays.asList(actions) + "}";
     }
 
-    public Event trigger() {
+    public Message trigger() {
         return trigger;
     }
 }

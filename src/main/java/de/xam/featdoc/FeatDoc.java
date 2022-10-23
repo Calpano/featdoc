@@ -8,7 +8,7 @@ import de.xam.featdoc.mermaid.MermaidTool;
 import de.xam.featdoc.mermaid.flowchart.FlowchartDiagram;
 import de.xam.featdoc.mermaid.sequence.MermaidDiagram;
 import de.xam.featdoc.mermaid.sequence.SequenceDiagram;
-import de.xam.featdoc.system.Event;
+import de.xam.featdoc.system.Message;
 import de.xam.featdoc.system.Feature;
 import de.xam.featdoc.system.Rule;
 import de.xam.featdoc.system.Scenario;
@@ -53,15 +53,15 @@ public class FeatDoc {
         lineWriter.writeToc();
 
         // unused events?
-        Set<Event> allEvents = universe.systems().stream().flatMap(system -> system.events().stream()).collect(Collectors.toSet());
-        Set<Event> usedInRules = new HashSet<>();
+        Set<Message> allMessages = universe.systems().stream().flatMap(system -> system.events().stream()).collect(Collectors.toSet());
+        Set<Message> usedInRules = new HashSet<>();
         universe.systems().stream().flatMap(System::rules).forEach(rule -> {
             usedInRules.add(rule.trigger());
             usedInRules.addAll(rule.actions());
         });
         lineWriter.writeLine("# Events, not used in any rules");
-        allEvents.removeAll(usedInRules);
-        allEvents.forEach(event -> lineWriter.writeLine("* %s", wikiContext.wikiLink(event)));
+        allMessages.removeAll(usedInRules);
+        allMessages.forEach(event -> lineWriter.writeLine("* %s", wikiContext.wikiLink(event)));
 
         // rules, which never trigger?
         Set<Rule> allRules = universe.systems().stream().flatMap(System::rules).collect(Collectors.toSet());
@@ -71,11 +71,11 @@ public class FeatDoc {
         });
         lineWriter.writeLine("# Rules, not used in any scenario");
         allRules.removeAll(usedInScenarios);
-        allEvents.forEach(event -> lineWriter.writeLine("* %s", wikiContext.wikiLink(event)));
+        allMessages.forEach(event -> lineWriter.writeLine("* %s", wikiContext.wikiLink(event)));
     }
 
-    private static void eventsToMarkdown(Universe universe, System system, IWikiContext wikiContext, Predicate<Event> eventPredicate, LineWriter lineWriter) {
-        system.events().stream().filter(eventPredicate).sorted(Comparator.comparing(Event::label)).forEach(event -> {
+    private static void eventsToMarkdown(Universe universe, System system, IWikiContext wikiContext, Predicate<Message> eventPredicate, LineWriter lineWriter) {
+        system.events().stream().filter(eventPredicate).sorted(Comparator.comparing(Message::label)).forEach(event -> {
             lineWriter.writeLine("* **%s** [%s]%n", event.label(), timing(event,wikiContext));
             universe.featuresProducing(event).forEach(producingFeature -> lineWriter.writeLine(
                     "    * %s %s %s, %s %s/%s%n",
@@ -232,7 +232,7 @@ public class FeatDoc {
                         rule.trigger().label(),
                         rule.trigger().system().label(),
                         timing(rule.trigger(),wikiContext));
-                for (Event action : rule.actions()) {
+                for (Message action : rule.actions()) {
                     lineWriter.writeLine("    * %s %s **%s** in %s [%s]",
                             ARROW_LEFT_RIGHT_RULE,
                             wikiContext.i18n(Term.then_),
@@ -247,10 +247,10 @@ public class FeatDoc {
             }
         }
         lineWriter.writeSection(wikiContext.i18n(Term.incomingApiCalls));
-        eventsToMarkdown(universe, system, wikiContext, Event::isSynchronous, lineWriter);
+        eventsToMarkdown(universe, system, wikiContext, Message::isSynchronous, lineWriter);
 
         lineWriter.writeSection(wikiContext.i18n(Term.incomingAsyncEvents));
-        eventsToMarkdown(universe, system, wikiContext, Event::isAsynchronous, lineWriter);
+        eventsToMarkdown(universe, system, wikiContext, Message::isAsynchronous, lineWriter);
 
         lineWriter.writeSection(wikiContext.i18n(Term.systemLandscape));
         lineWriter.writeLine("* %s: %s",
@@ -268,8 +268,8 @@ public class FeatDoc {
         mermaidDiagramBlock(flowchartDiagram, wikiContext.markdownCustomizer(), lineWriter);
     }
 
-    private static String timing(Event event, IWikiContext wikiContext) {
-        return event.isSynchronous() ? wikiContext.i18n(Term.synchronous) : wikiContext.i18n(Term.asynchronous);
+    private static String timing(Message message, IWikiContext wikiContext) {
+        return message.isSynchronous() ? wikiContext.i18n(Term.synchronous) : wikiContext.i18n(Term.asynchronous);
     }
 
     public static <T> FlowchartDiagram toMermaidFlowchart(String title, Multimap<T, T> multimap, Function<T, String> idFun, Function<T, String> labelFun, boolean allowSelfLinks) {

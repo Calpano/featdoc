@@ -32,7 +32,7 @@ public class Universe {
      * @param source
      * @param target
      */
-    public record ResultStep(Feature feature, Rule rule, Event action, int depth, Step causeFromScenario, System source,
+    public record ResultStep(Feature feature, Rule rule, Message action, int depth, Step causeFromScenario, System source,
                              System target) {
 
         public boolean isScenario() {
@@ -48,7 +48,7 @@ public class Universe {
         List<ResultStep> resultingSteps = new ArrayList<>();
         for (Step step : scenario.steps()) {
             // is anything triggered?
-            reactOnEventAndMaterializeActions(step.event(), step.source(), step.target(), step, 0, resultingSteps::add);
+            reactOnEventAndMaterializeActions(step.message(), step.source(), step.target(), step, 0, resultingSteps::add);
         }
         return resultingSteps;
     }
@@ -57,8 +57,8 @@ public class Universe {
         return add(conditions, new Condition(label));
     }
 
-    public Stream<Feature> featuresProducing(Event event) {
-        return systems.stream().flatMap(system -> system.features().stream()).filter(feature -> feature.isProducing(event));
+    public Stream<Feature> featuresProducing(Message message) {
+        return systems.stream().flatMap(system -> system.features().stream()).filter(feature -> feature.isProducing(message));
     }
 
     public void forEachEdge(BiConsumer<System, System> source_target) {
@@ -75,8 +75,8 @@ public class Universe {
         return add(scenarios, new Scenario(this, title));
     }
 
-    public Stream<Step> scenarioStepsProducing(Event event) {
-        return scenarios.stream().flatMap(scenario -> scenario.steps().stream()).filter(step -> step.event().equals(event));
+    public Stream<Step> scenarioStepsProducing(Message message) {
+        return scenarios.stream().flatMap(scenario -> scenario.steps().stream()).filter(step -> step.message().equals(message));
     }
 
     public List<Scenario> scenarios() {
@@ -107,8 +107,8 @@ public class Universe {
         return systemSystemMap.entries().stream().filter(e -> e.getValue().equals(system)).map(Map.Entry::getKey).sorted();
     }
 
-    public Stream<System> systemsProducing(Event event) {
-        return systems.stream().filter(system -> system.isProducing(event));
+    public Stream<System> systemsProducing(Message message) {
+        return systems.stream().filter(system -> system.isProducing(message));
     }
 
     public SequenceDiagram toSequence(Scenario scenario) {
@@ -144,7 +144,7 @@ public class Universe {
         return trees;
     }
 
-    private void reactOnEventAndMaterializeActions(Event trigger, System source, @Nullable System target, Step causeFromScenario, int depth, Consumer<ResultStep> resultConsumer) {
+    private void reactOnEventAndMaterializeActions(Message trigger, System source, @Nullable System target, Step causeFromScenario, int depth, Consumer<ResultStep> resultConsumer) {
         if (target != null) {
             resultConsumer.accept(new ResultStep(null, null, trigger, depth, causeFromScenario, source, target));
         }
@@ -152,7 +152,7 @@ public class Universe {
             for (Feature feature : system.features) {
                 for (Rule rule : feature.rules) {
                     if (rule.trigger.equals(trigger)) {
-                        for (Event action : rule.actions) {
+                        for (Message action : rule.actions) {
                             resultConsumer.accept(new ResultStep(feature, rule, action, depth+1, causeFromScenario, trigger.system(), action.system()));
                             // recursively react
                             reactOnEventAndMaterializeActions(action, action.system(), null, causeFromScenario, depth + 1, resultConsumer);

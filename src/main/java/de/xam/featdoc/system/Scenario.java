@@ -23,16 +23,16 @@ public class Scenario implements IWikiLink {
     }
 
     /**
-     * Alias for {@link #step(System, System, Event)} to ease refactoring/refinement of scenarios
+     * Alias for {@link #step(System, System, Message)} to ease refactoring/refinement of scenarios
      */
-    public Scenario asyncEvent(System source, System target, Event event) {
-        if (!event.isAsynchronous())
-            throw new IllegalStateException("asyncEvent must use an asynchronous event, not " + event);
-        return step(source, target, event);
+    public Scenario asyncEvent(System source, System target, Message message) {
+        if (!message.isAsynchronous())
+            throw new IllegalStateException("asyncEvent must use an asynchronous event, not " + message);
+        return step(source, target, message);
     }
 
     public Scenario asyncEvent(System source, System target, String event) {
-        return step(source, target, new Event(target, Timing.Asynchronous, event));
+        return step(source, target, new Message(target, Timing.Asynchronous, event));
     }
 
     @Override
@@ -45,8 +45,8 @@ public class Scenario implements IWikiLink {
         return MarkdownTool.filename(label());
     }
 
-    public Scenario step(System source, System target, Event event) {
-        Step step = new Step(this, source, target, event);
+    public Scenario step(System source, System target, Message message) {
+        Step step = new Step(this, source, target, message);
         steps.add(step);
         return this;
     }
@@ -56,16 +56,16 @@ public class Scenario implements IWikiLink {
     }
 
     public Scenario syncCall(System source, System target, String eventName) {
-        return step(source, target, new Event(target, Timing.Synchronous, eventName));
+        return step(source, target, new Message(target, Timing.Synchronous, eventName));
     }
 
     /**
-     * Alias for {@link #step(System, System, Event)} to ease refactoring/refinement of scenarios
+     * Alias for {@link #step(System, System, Message)} to ease refactoring/refinement of scenarios
      */
-    public Scenario syncCall(System source, System target, Event event) {
-        if (!event.isSynchronous())
-            throw new IllegalStateException("syncCall must use a synchronous event, not " + event);
-        return step(source, target, event);
+    public Scenario syncCall(System source, System target, Message message) {
+        if (!message.isSynchronous())
+            throw new IllegalStateException("syncCall must use a synchronous event, not " + message);
+        return step(source, target, message);
     }
 
     /** distinct and sorted */

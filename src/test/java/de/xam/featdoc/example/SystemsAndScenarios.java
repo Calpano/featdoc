@@ -1,6 +1,6 @@
 package de.xam.featdoc.example;
 
-import de.xam.featdoc.system.Event;
+import de.xam.featdoc.system.Message;
 import de.xam.featdoc.system.System;
 import de.xam.featdoc.system.Universe;
 
@@ -25,12 +25,12 @@ public class SystemsAndScenarios {
     }
 
     interface Customer {
-        Event receiveBill = CUSTOMER.eventAsync("Receive bill");
+        Message receiveBill = CUSTOMER.eventAsync("Receive bill");
     }
     interface MobileOrderClient {
-        Event createOrder = MOC.uiAction("Create Order");
-        Event addItemToOrder = MOC.uiAction("Add item to running order");
-        Event createBill = MOC.apiCall("Create bill");
+        Message createOrder = MOC.uiAction("Create Order");
+        Message addItemToOrder = MOC.uiAction("Add item to running order");
+        Message createBill = MOC.apiCall("Create bill");
 
         static void define() {
             MOC.feature("Mobile Orders")
@@ -40,44 +40,44 @@ public class SystemsAndScenarios {
     }
 
     interface Waiter {
-        Event orderEspresso = WAITER.apiCall("Order Espresso");
-        Event orderEspressoDouble = WAITER.apiCall("Order Double Espresso");
-        Event orderCappuccino = WAITER.apiCall("Order Cappuccino");
-        Event event_customerWantsToPay = WAITER.apiCall("Customer wants to pay");
+        Message orderEspresso = WAITER.apiCall("Order Espresso");
+        Message orderEspressoDouble = WAITER.apiCall("Order Double Espresso");
+        Message orderCappuccino = WAITER.apiCall("Order Cappuccino");
+        Message customerWantsToPay = WAITER.apiCall("Customer wants to pay");
 
 
         static void define() {
             WAITER.feature("Coffee Serving")
-                    .rule(orderEspresso, CoffeeMachine.coffee_espresso, MobileOrderClient.createOrder, MobileOrderClient.addItemToOrder)
-                    .rule(event_customerWantsToPay, MobileOrderClient.createBill, Customer.receiveBill);
+                    .rule(orderEspresso, CoffeeMachine.espresso, MobileOrderClient.createOrder, MobileOrderClient.addItemToOrder)
+                    .rule(customerWantsToPay, MobileOrderClient.createBill, Customer.receiveBill);
         }
 
 
     }
 
     interface CoffeeMachine {
-        Event coffee_espresso = CM.apiCall("Make an espresso");
-        Event coffee_espressoDouble = CM.apiCall("Make a double espresso");
-        Event coffee_cappuccino = CM.apiCall("Make a cappuccino");
+        Message espresso = CM.apiCall("Make an espresso");
+        Message espressoDouble = CM.apiCall("Make a double espresso");
+        Message cappuccino = CM.apiCall("Make a cappuccino");
 
-        Event coffee_event_beansConsumed = CM.eventAsync("20g of coffee beans consumed");
-        Event coffee_event_milkConsumed = CM.eventAsync("milk consumed");
+        Message eventBeansConsumed = CM.eventAsync("20g of coffee beans consumed");
+        Message eventMilkConsumed = CM.eventAsync("milk consumed");
 
         static void define() {
             WAITER.feature("Coffee Making") //
-                    .rule(coffee_espresso, coffee_event_beansConsumed) //
-                    .rule(coffee_espressoDouble, coffee_event_beansConsumed, coffee_event_beansConsumed) //
-                    .rule(coffee_cappuccino, coffee_event_beansConsumed, coffee_event_milkConsumed) //
+                    .rule(espresso, eventBeansConsumed) //
+                    .rule(espressoDouble, eventBeansConsumed, eventBeansConsumed) //
+                    .rule(cappuccino, eventBeansConsumed, eventMilkConsumed) //
             ;
         }
     }
 
     interface PosSystem {
 
-        Event createOrder = POS.apiCall("Create order for table");
-        Event searchOrdersForTable = POS.apiCall("Search order of given table");
-        Event addItemToOrder = POS.apiCall("Add item");
-        Event addTaxesToOrder = POS.apiCall("Add taxes");
+        Message createOrder = POS.apiCall("Create order for table");
+        Message searchOrdersForTable = POS.apiCall("Search order of given table");
+        Message addItemToOrder = POS.apiCall("Add item");
+        Message addTaxesToOrder = POS.apiCall("Add taxes");
 
         static void define() {
             POS.feature("Tax Integration")
@@ -87,13 +87,13 @@ public class SystemsAndScenarios {
 
     interface AccountingSystem {
 
-        Event calculateTax = ACC.apiCall("Calculate taxes");
-        Event reduceInventory = ACC.apiCall("Reduce inventory");
+        Message calculateTax = ACC.apiCall("Calculate taxes");
+        Message reduceInventory = ACC.apiCall("Reduce inventory");
 
         static void define() {
             ACC.feature("Inventory")
-                    .rule(CoffeeMachine.coffee_event_beansConsumed,reduceInventory)
-                    .rule(CoffeeMachine.coffee_event_milkConsumed,reduceInventory);
+                    .rule(CoffeeMachine.eventBeansConsumed,reduceInventory)
+                    .rule(CoffeeMachine.eventMilkConsumed,reduceInventory);
         }
     }
 
@@ -103,7 +103,7 @@ public class SystemsAndScenarios {
     public static void defineScenarios() {
         Systems.UNIVERSE.scenario("Lunch-Customer (in a hurry)") //
                 .syncCall(CUSTOMER, WAITER, Waiter.orderEspresso)//
-                .syncCall(CUSTOMER, WAITER, Waiter.event_customerWantsToPay) //
+                .syncCall(CUSTOMER, WAITER, Waiter.customerWantsToPay) //
         ;
     }
 

@@ -16,7 +16,7 @@ public class System implements IWikiLink, Comparable<System> {
     final String id;
     final String label;
     final List<Feature> features = new ArrayList<>();
-    private final List<Event> events = new ArrayList<>();
+    private final List<Message> messages = new ArrayList<>();
 
     /***
      *
@@ -30,10 +30,10 @@ public class System implements IWikiLink, Comparable<System> {
         this.wikiName = wikiName;
     }
 
-    public Event apiCall(String apiCallName) {
-        Event event = new Event(this, Timing.Synchronous, apiCallName);
-        events.add(event);
-        return event;
+    public Message apiCall(String apiCallName) {
+        Message message = new Message(this, Timing.Synchronous, apiCallName);
+        messages.add(message);
+        return message;
     }
 
     @Override
@@ -41,14 +41,14 @@ public class System implements IWikiLink, Comparable<System> {
         return this.label.compareTo(o.label);
     }
 
-    public Event eventAsync(String eventName) {
-        Event event = new Event(this, Timing.Asynchronous, eventName);
-        events.add(event);
-        return event;
+    public Message eventAsync(String eventName) {
+        Message message = new Message(this, Timing.Asynchronous, eventName);
+        messages.add(message);
+        return message;
     }
 
-    public List<Event> events() {
-        return Collections.unmodifiableList(events);
+    public List<Message> events() {
+        return Collections.unmodifiableList(messages);
     }
 
     public Feature feature( String name) {
@@ -61,8 +61,8 @@ public class System implements IWikiLink, Comparable<System> {
         return Collections.unmodifiableList(features);
     }
 
-    public boolean isProducing(Event event) {
-        return producedEvents().filter(e -> e.equals(event)).findAny().isPresent();
+    public boolean isProducing(Message message) {
+        return producedEvents().filter(e -> e.equals(message)).findAny().isPresent();
     }
 
     @Override
@@ -83,13 +83,13 @@ public class System implements IWikiLink, Comparable<System> {
         return "[" + label + "]";
     }
 
-    public Event uiAction(String label) {
-        Event event = new Event(this, Timing.Synchronous, label);
-        events.add(event);
-        return event;
+    public Message uiAction(String label) {
+        Message message = new Message(this, Timing.Synchronous, label);
+        messages.add(message);
+        return message;
     }
 
-    public Stream<Event> producedEvents() {
+    public Stream<Message> producedEvents() {
         return features.stream().flatMap(feature -> feature.producedEvents()).distinct();
     }
 
