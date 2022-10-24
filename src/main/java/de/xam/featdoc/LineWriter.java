@@ -11,14 +11,17 @@ public interface LineWriter {
 
     static LineWriter wrap(Writer w) {
         return (string, args) -> {
-
-            String[] htmlifiedArgs = new String[args.length];
-            for (int i = 0; i < args.length; i++) {
-                htmlifiedArgs[i] = args[i].replace("|"," ");
-            }
-
             try {
-                w.write(String.format(string, htmlifiedArgs));
+                if(args==null||args.length==0) {
+                    // no replacements
+                    w.write(string);
+                } else {
+                    String[] htmlifiedArgs = new String[args.length];
+                    for (int i = 0; i < args.length; i++) {
+                        htmlifiedArgs[i] = args[i].replace("|"," ");
+                    }
+                    w.write(String.format(string, (Object[]) htmlifiedArgs));
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -45,7 +48,8 @@ public interface LineWriter {
     }
 
     /**
-     * Using String#format
+     * If no arguments are given, the string is written as-is.
+     * With arguments, the string is used as a pattern and the arguments are the replacements, using String#format
      *
      * @param string
      * @param args

@@ -21,12 +21,17 @@ public class Rule {
         RuleBuilder feature(Feature feature);
 
         RuleWithTriggerBuilder trigger(Message triggerMessage, String triggerComment);
+
     }
 
     public interface RuleWithTriggerBuilder {
 
 
         RuleWithTriggerBuilder action(Message action, String comment);
+
+        default RuleWithTriggerBuilder action(Message action) {
+            return action(action,null);
+        }
 
         RuleWithTriggerBuilder actions(Message... actions);
 
