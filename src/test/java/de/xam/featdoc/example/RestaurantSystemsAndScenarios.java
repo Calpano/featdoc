@@ -25,10 +25,10 @@ public class RestaurantSystemsAndScenarios {
     }
 
     interface Customer {
-        Message receiveBill = CUSTOMER.eventAsync("Receive bill");
+        Message receiveBill = CUSTOMER.asyncEventOutgoing("Receive bill");
     }
     interface MobileOrderClient {
-        Message createOrder = MOC.uiAction("Create Order");
+        Message createOrder = MOC.uiInput("Create Order");
         Message addItemToOrder = MOC.uiAction("Add item to running order");
         Message createBill = MOC.apiCall("Create bill");
 
@@ -60,8 +60,8 @@ public class RestaurantSystemsAndScenarios {
         Message espressoDouble = CM.apiCall("Make a double espresso");
         Message cappuccino = CM.apiCall("Make a cappuccino");
 
-        Message eventBeansConsumed = CM.eventAsync("20g of coffee beans consumed");
-        Message eventMilkConsumed = CM.eventAsync("milk consumed");
+        Message eventBeansConsumed = CM.asyncEventOutgoing("20g of coffee beans consumed");
+        Message eventMilkConsumed = CM.asyncEventOutgoing("milk consumed");
 
         static void define() {
             WAITER.feature("Coffee Making")
@@ -103,8 +103,8 @@ public class RestaurantSystemsAndScenarios {
      */
     public static void defineScenarios() {
         Systems.UNIVERSE.scenario("Lunch-Customer (in a hurry)") //
-                .syncCall(CUSTOMER, WAITER, Waiter.orderEspresso)//
-                .syncCall(CUSTOMER, WAITER, Waiter.customerWantsToPay, "Today no credit cards") //
+                .step(CUSTOMER, WAITER, Waiter.orderEspresso)//
+                .step(CUSTOMER, WAITER, Waiter.customerWantsToPay, "Today no credit cards") //
         ;
     }
 

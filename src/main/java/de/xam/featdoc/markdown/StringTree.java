@@ -159,8 +159,8 @@ public class StringTree implements Comparable<StringTree> {
         }
 //        if (isJustAChain()) {
 //            // render subtree as chain
-//            lineWriter.write("%s%s %s", pre, "" + marker, label);
-//            children.forEach(child -> lineWriter.write(" %s", child.label));
+//            lineWriter.write("%s%s %s", pre, "" + marker, name);
+//            children.forEach(child -> lineWriter.write(" %s", child.name));
 //            lineWriter.writeLine("");
 //        } else {
         // render subtree as tree

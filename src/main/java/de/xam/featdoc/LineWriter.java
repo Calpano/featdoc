@@ -16,11 +16,7 @@ public interface LineWriter {
                     // no replacements
                     w.write(string);
                 } else {
-                    String[] htmlifiedArgs = new String[args.length];
-                    for (int i = 0; i < args.length; i++) {
-                        htmlifiedArgs[i] = args[i].replace("|"," ");
-                    }
-                    w.write(String.format(string, (Object[]) htmlifiedArgs));
+                    w.write(String.format(string, (String[]) args));
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -28,14 +24,14 @@ public interface LineWriter {
         };
     }
 
-    /** A default ## section */
+    /** H2 section, markdown: '## sectionTitle' */
     default void writeSection(String sectionTitle, String ...args) {
         writeLine("");
         writeLine("## %s", String.format(sectionTitle, args));
         writeLine("");
     }
 
-    /** A main # section */
+    /** H1 section, markdown: '# sectionTitle' */
     default void writeSection1(String section1Title, String ... args) {
         writeLine("## %s", String.format(section1Title, args));
         writeLine("");

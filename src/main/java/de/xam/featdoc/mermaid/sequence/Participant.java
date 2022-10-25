@@ -9,8 +9,6 @@ public class Participant {
     public final String id;
     public final String label;
 
-    private final List<Link> link = new ArrayList<>();
-
     private Participant(boolean isActor, String id, String label) {
         this.isActor = isActor;
         this.id = id;

@@ -65,6 +65,7 @@ public class Universe {
     }
 
     public Stream<ScenarioStep> scenarioStepsProducing(Message message) {
+        // TODO equals?
         return scenarios.stream().flatMap(scenario -> scenario.steps().stream()).filter(scenarioStep -> scenarioStep.rulePart().message().equals(message));
     }
 
@@ -73,7 +74,11 @@ public class Universe {
     }
 
     public System system(String id, String name, String wikiName) {
-        return add(systems, new System(id, name, wikiName));
+        return add(systems, new System(id, name, wikiName,0));
+    }
+
+    public System system(String id, String name, String wikiName, int sortOrder) {
+        return add(systems, new System(id, name, wikiName,sortOrder));
     }
 
     public List<System> systems() {
@@ -109,7 +114,7 @@ public class Universe {
         resultingSteps.forEach(step -> sequenceDiagram.step(step.source.id,
                 step.rulePart.message().timing() == Timing.Synchronous ? Arrow.SolidWithHead : Arrow.DottedAsync,
                 step.target.id,
-                MarkdownTool.format(step.rulePart.message().label() + (step.feature == null ? "" : " [" + step.feature.label + "]"))));
+                MarkdownTool.format(step.rulePart.message().name() + (step.feature == null ? "" : " [" + step.feature.label + "]"))));
         return sequenceDiagram;
     }
 

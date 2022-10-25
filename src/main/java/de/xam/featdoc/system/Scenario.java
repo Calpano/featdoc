@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-public class Scenario implements IWikiLink, ScenarioApi {
+public class Scenario implements IWikiLink {
     private final String label;
     private final List<ScenarioStep> scenarioSteps = new ArrayList<>();
     private final Universe universe;
@@ -35,12 +35,34 @@ public class Scenario implements IWikiLink, ScenarioApi {
         return MarkdownTool.filename(label());
     }
 
-    @Override
-    public Scenario step(System source, System target, Message message, String stepComment) {
-        ScenarioStep scenarioStep = new ScenarioStep(this, source, target, new Rule.Trigger(message, stepComment));
+    /**
+     * @param source sending system
+     * @param target receiving system
+     * @param message must either be defined within 'source' as outgoing OR in 'target' as incoming
+     * @param comment optional comment on this one particular trigger message (event)
+     * @return Scenario for further extension
+     */
+    public Scenario step(System source, System target, Message message, String comment) {
+        if (message.system().equals(source)) {
+            if (message.direction() != Message.Direction.OUTGOING)
+                throw new IllegalStateException("Message defined in source System " + source + " must be OUTGOING, is " + message);
+        } else if (message.system().equals(target)) {
+            if (message.direction() != Message.Direction.INCOMING)
+                throw new IllegalStateException("Message defined in target System " + source + " must be INCOMING, is " + message);
+        } else {
+            throw new IllegalStateException("Message not defined in either source (" + source.label + ") or target (" + target.label + ") system: " + message);
+        }
+
+        ScenarioStep scenarioStep = new ScenarioStep(this, source, target, new Rule.Trigger(message, comment));
         scenarioSteps.add(scenarioStep);
         return this;
     }
+
+
+    public Scenario step(System source, System target, Message message) {
+        return step(source, target, message, null);
+    }
+
 
     public List<ScenarioStep> steps() {
         return Collections.unmodifiableList(scenarioSteps);

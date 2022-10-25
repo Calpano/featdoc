@@ -27,12 +27,20 @@ public class MarkdownTool {
         public Table row(String... args) {
             if(cols > 0 && cols!=args.length)
                 throw new IllegalArgumentException("Table rows must have some lenght");
-            lineWriter.writeLine("|" + Stream.of(args).collect(Collectors.joining("|")) + "|");
+            lineWriter.writeLine("|" +
+                Stream.of(args)
+                    .map(MarkdownTool::escapePipes)
+                    .collect(Collectors.joining("|")) + "|"
+            );
             this.cols = args.length;
             return this;
         }
 
 
+    }
+
+    public static String escapePipes(String s) {
+        return s.replace("|", "\\|");
     }
 
     public static String filename(String title) {
@@ -49,7 +57,7 @@ public class MarkdownTool {
         return in.replace("|", "<br/>");
     }
 
-    public static String fragmentid(String s) {
+    public static String fragmentId(String s) {
         String enc = s.toLowerCase();
         enc = enc.replace(" ", "-");
         enc = URLEncoder.encode(enc, StandardCharsets.UTF_8);

@@ -8,7 +8,7 @@ class MarkdownToolTest {
 
     @Test
     void testHtmlId() {
-        assertEquals(MarkdownTool.fragmentid("Feature: TIS Case-Event-Prozessor"), "feature%3A-tis-case-event-prozessor");
+        assertEquals(MarkdownTool.fragmentId("Feature: TIS Case-Event-Prozessor"), "feature%3A-tis-case-event-prozessor");
     }
 
 

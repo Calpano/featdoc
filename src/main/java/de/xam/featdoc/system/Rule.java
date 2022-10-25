@@ -22,6 +22,9 @@ public class Rule {
 
         RuleWithTriggerBuilder trigger(Message triggerMessage, String triggerComment);
 
+        default RuleWithTriggerBuilder trigger(Message triggerMessage) {
+            return trigger(triggerMessage,null);
+        }
     }
 
     public interface RuleWithTriggerBuilder {
@@ -40,7 +43,7 @@ public class Rule {
 
     public record Trigger(Message incomingMessage, @Nullable String comment) implements RulePart {
         public boolean isTriggeredBy(Message message) {
-            return message().label().equals(message.label()) && message().system().equals(message.system());
+            return message().name().equals(message.name()) && message().system().equals(message.system());
         }
 
         @Override

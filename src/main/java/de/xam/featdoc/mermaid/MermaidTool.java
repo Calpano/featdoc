@@ -25,7 +25,16 @@ public class MermaidTool {
     }
 
     public static void generateMermaidSyntax(SequenceDiagram sequenceDiagram, LineWriter lineWriter) {
-        lineWriter.writeLine("sequenceDiagram\n");
+        lineWriter.writeLine("%%{");
+        lineWriter.writeLine("    init: {");
+        lineWriter.writeLine("        'fontFamily': 'Tahoma, Arial, Sans-Serif',");
+        lineWriter.writeLine("        'sequence': {");
+        lineWriter.writeLine("            'mirrorActors':true,");
+        lineWriter.writeLine("            'wrap': true");
+        lineWriter.writeLine("        }");
+        lineWriter.writeLine("    }");
+        lineWriter.writeLine("}%%");
+        lineWriter.writeLine("sequenceDiagram");
         for (Participant participant : sequenceDiagram.participants()) {
             lineWriter.writeLine(INDENT + participant.mermaid());
         }

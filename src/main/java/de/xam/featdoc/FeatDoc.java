@@ -63,7 +63,7 @@ public class FeatDoc {
         });
         allMessages.removeAll(usedInRules);
         allMessages.forEach(message -> lineWriter.writeLine("* %s ([%s](%s))",
-                message.label(),
+                message.name(),
                 message.system().label(),
                 message.system().wikiLink(wikiContext.i18n())));
 
@@ -76,12 +76,12 @@ public class FeatDoc {
                 rule.feature().label(),
                 rule.feature().system().label(),
                 rule.feature().system().wikiLink(wikiContext.i18n()),
-                rule.trigger().incomingMessage().label()));
+                rule.trigger().incomingMessage().name()));
     }
 
     private static void eventsToMarkdown(Universe universe, System system, IWikiContext wikiContext, Predicate<Message> eventPredicate, LineWriter lineWriter) {
-        system.events().stream().filter(eventPredicate).sorted(Comparator.comparing(Message::label)).forEach(event -> {
-            lineWriter.writeLine("* **%s** [%s]%n", event.label(), timing(event,wikiContext));
+        system.events().stream().filter(eventPredicate).sorted(Comparator.comparing(Message::name)).forEach(event -> {
+            lineWriter.writeLine("* **%s** [%s]%n", event.name(), timing(event,wikiContext));
             universe.featuresProducing(event).forEach(producingFeature -> lineWriter.writeLine(
                     "    * %s %s %s, %s %s/%s%n",
                     ARROW_RIGHT_LEFT_SOLID,
@@ -180,10 +180,11 @@ public class FeatDoc {
                     wikiContext.wikiLink(rs.source()),
                     rs.rulePart().message().isSynchronous() ? ARROW_LEFT_RIGHT_SOLID : ARROW_LEFT_RIGHT_DASHED,
                     wikiContext.wikiLink(rs.target()),
-                    rs.rulePart().message().label(),
-                    rs.rulePart().comment() == null ? "   ":"*"+rs.rulePart().comment()+"*",
-                    rs.isScenario()? "**Scenario**":
-                        String.format("(%s/%s)", wikiContext.wikiLink(rs.feature().system()), rs.feature().label())
+                    rs.rulePart().message().name(),
+                    rs.rulePart().comment() == null ? "   ":
+                            "*"+rs.rulePart().comment()+"*",
+                    rs.isScenario() ? "**" + wikiContext.i18n(Term.scenario) + "**" :
+                            String.format("%s/%s", wikiContext.wikiLink(rs.feature().system()), rs.feature().label())
             );
         }
 
@@ -194,7 +195,7 @@ public class FeatDoc {
                         wikiContext.wikiLink(rs.source()),
                         rs.rulePart().message().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
                         wikiContext.wikiLink(rs.target()),
-                        rs.rulePart().message().label(),
+                        rs.rulePart().message().name(),
                         rs.feature() == null ? wikiContext.i18n(Term.scenario) : wikiContext.wikiLink(rs.feature().system()) + "/" + rs.feature().label()
         ));
         StringTree.toMarkdownList(trees,lineWriter);
@@ -237,14 +238,14 @@ public class FeatDoc {
                         * %s: %s **%s** in %s [%s]""",
                         wikiContext.i18n(Term.rule),
                         wikiContext.i18n(Term.if_),
-                        rule.trigger().incomingMessage().label(),
+                        rule.trigger().incomingMessage().name(),
                         rule.trigger().incomingMessage().system().label(),
                         timing(rule.trigger().incomingMessage(),wikiContext));
                 for (Rule.Action action : rule.actions()) {
                     lineWriter.writeLine("    * %s %s **%s** in %s [%s]",
                             ARROW_LEFT_RIGHT_RULE,
                             wikiContext.i18n(Term.then_),
-                            action.outgoingMessage().label(),
+                            action.outgoingMessage().name(),
                             wikiContext.wikiLink(action.outgoingMessage().system()),
                             timing(action.outgoingMessage(),wikiContext)
                     );

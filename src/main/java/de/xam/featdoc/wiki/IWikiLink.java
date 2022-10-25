@@ -10,7 +10,7 @@ public interface IWikiLink extends IWikiFile {
      * local part
      */
     default String localTarget() {
-        return MarkdownTool.fragmentid(label());
+        return MarkdownTool.fragmentId(label());
     }
 
 

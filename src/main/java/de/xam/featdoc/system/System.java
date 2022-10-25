@@ -8,14 +8,35 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
-public class System implements IWikiLink, Comparable<System> {
+import static de.xam.featdoc.Util.add;
+
+public class System implements IWikiLink, Comparable<System>, SystemApi {
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof System system)) return false;
+        return sortOrder == system.sortOrder && Objects.equals(label, system.label);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(label, sortOrder);
+    }
 
     public final String wikiName;
     final String id;
     final String label;
+
+    public int sortOrder() {
+        return sortOrder;
+    }
+
+    final int sortOrder;
     final List<Feature> features = new ArrayList<>();
     private final List<Message> messages = new ArrayList<>();
 
@@ -24,29 +45,31 @@ public class System implements IWikiLink, Comparable<System> {
      * @param id to be used in generated Mermaid sequence diagrams
      * @param label ..
      * @param wikiName suitable for a wiki page name / link target
+     * @param sortOrder first sort criterion; name is used as second
      */
-    public System(String id, String label, String wikiName) {
+    public System(String id, String label, String wikiName, int sortOrder) {
         this.id = id;
         this.label = label;
         this.wikiName = wikiName;
+        this.sortOrder = sortOrder;
     }
 
-    public Message apiCall(String apiCallName) {
-        Message message = new Message(this, Timing.Synchronous, apiCallName);
-        messages.add(message);
-        return message;
+
+    @Override
+    public Message step(Message.Direction direction, Timing timing, String name) {
+        return add(messages, new Message(this, direction, timing,name));
     }
+
 
     @Override
     public int compareTo(@NotNull System o) {
-        return this.label.compareTo(o.label);
+        return comparator().compare(this, o);
     }
 
-    public Message eventAsync(String eventName) {
-        Message message = new Message(this, Timing.Asynchronous, eventName);
-        messages.add(message);
-        return message;
+    public static Comparator<System> comparator() {
+        return Comparator.comparing(System::sortOrder).thenComparing(System::label);
     }
+
 
     public List<Message> events() {
         return Collections.unmodifiableList(messages);
@@ -84,11 +107,6 @@ public class System implements IWikiLink, Comparable<System> {
         return "[" + label + "]";
     }
 
-    public Message uiAction(String label) {
-        Message message = new Message(this, Timing.Synchronous, label);
-        messages.add(message);
-        return message;
-    }
 
     public Stream<Message> producedEvents() {
         return features.stream().flatMap(feature -> feature.producedEvents()).distinct();
