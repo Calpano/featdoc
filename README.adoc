@@ -20,4 +20,53 @@ https://dev.azure.com/itmv/Coffee%20Shop/_wiki/wikis/Coffee-Shop.wiki/3/FeatDoc[
 
 * Mermaid: https://mermaid-js.github.io/mermaid/#/[Docs], https://mermaid.live/[Online Editor]
 
+== Data Model
+Featdoc has two main concepts:
+
+System::
+Defines its input messages and output messages. Also has simple rules, which define which trigger message causes which action messages.
+
+Scenario::
+Sends a message to a system from the outside. This usually starts a chain of reactions from systems.
+
+
+[plantuml,arch,svg]
+....
+hide empty members
+enum Timing {
+    Synchron
+    Asynchron
+}
+enum Direction {
+    Incoming
+    Outgoing
+}
+class Scenario
+class Step {
+    comment
+}
+class System
+class Rule
+class Trigger {
+    comment
+}
+class Action {
+    comment
+}
+
+Scenario --o "n" Step
+Step --> System : source
+Step --> System : target
+System --o "n" Rule
+Rule --o Trigger
+Rule --o "n" Action
+Trigger --> Message
+Action --> Message
+Message --o Timing
+Message --o Direction
+Step --> Message : Every step sends\na message
+System o-- Message : The system, \nwhich defines \nthe contract
+....
+
+
 
