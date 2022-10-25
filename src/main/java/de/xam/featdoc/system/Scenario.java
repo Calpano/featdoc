@@ -5,6 +5,7 @@ import de.xam.featdoc.Term;
 import de.xam.featdoc.markdown.MarkdownTool;
 import de.xam.featdoc.wiki.IWikiLink;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,6 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+
+import static org.slf4j.LoggerFactory.getLogger;
 
 public class Scenario implements IWikiLink {
     private final String label;
@@ -35,6 +38,8 @@ public class Scenario implements IWikiLink {
         return MarkdownTool.filename(label());
     }
 
+    private static final Logger log = getLogger(Scenario.class);
+
     /**
      * @param source sending system
      * @param target receiving system
@@ -43,14 +48,14 @@ public class Scenario implements IWikiLink {
      * @return Scenario for further extension
      */
     public Scenario step(System source, System target, Message message, String comment) {
-        if (message.system().equals(source)) {
+        if (message.system().equals(source) && !message.equals(target)) {
             if (message.direction() != Message.Direction.OUTGOING)
-                throw new IllegalStateException("Message defined in source System " + source + " must be OUTGOING, is " + message);
-        } else if (message.system().equals(target)) {
+                log.warn("Message defined in source System " + source + " must be OUTGOING, is " + message);
+        } else if (message.system().equals(target) && !message.system().equals(source)) {
             if (message.direction() != Message.Direction.INCOMING)
-                throw new IllegalStateException("Message defined in target System " + source + " must be INCOMING, is " + message);
+                log.warn("Message defined in target System " + source + " must be INCOMING, is " + message);
         } else {
-            throw new IllegalStateException("Message not defined in either source (" + source.label + ") or target (" + target.label + ") system: " + message);
+            log.warn("Message not defined in either source (" + source.label + ") or target (" + target.label + ") system: " + message);
         }
 
         ScenarioStep scenarioStep = new ScenarioStep(this, source, target, new Rule.Trigger(message, comment));
