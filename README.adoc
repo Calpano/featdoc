@@ -12,3 +12,12 @@ Soon we will publish more details, sure.
 </dependency>
 ----
 Check latest version: https://mvnrepository.com/artifact/de.xam/featdoc[]
+
+== Example
+https://dev.azure.com/itmv/Coffee%20Shop/_wiki/wikis/Coffee-Shop.wiki/3/FeatDoc[Coffee-Wiki]
+
+== Tools
+
+* Mermaid: https://mermaid-js.github.io/mermaid/#/[Docs], https://mermaid.live/[Online Editor]
+
+

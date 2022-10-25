@@ -1,0 +1,15 @@
+= Syntax
+
+Featdoc generates mermaid diagrams in markdown for Azure wiki.
+
+So what are the syntax escaping rules we need to obey?
+
+== Mermaid
+Comments and directives start/end with `%%`.
+The word `end` causes problems.
+
+== Markdown
+Syntax can be escaped via '\'.
+
+== Java Format
+Uses e.g. `%s` for string substitution.
