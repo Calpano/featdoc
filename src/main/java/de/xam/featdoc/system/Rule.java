@@ -58,6 +58,7 @@ public class Rule {
     }
 
     public record Action(Message outgoingMessage, @Nullable String comment) implements RulePart {
+        /** Alias for outgoingMessage */
         @Override
         public Message message() {
             return outgoingMessage();
