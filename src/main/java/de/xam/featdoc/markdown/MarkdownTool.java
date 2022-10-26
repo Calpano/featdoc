@@ -4,6 +4,8 @@ import de.xam.featdoc.LineWriter;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -43,14 +45,26 @@ public class MarkdownTool {
         return s.replace("|", "\\|");
     }
 
+    private static final String ALLOWED_CHARS_IN_AZURE_WIKI_FILENAMES = ",()öäüÖÄÜ";
+
     public static String filename(String title) {
         String enc = URLEncoder.encode(title, StandardCharsets.UTF_8);
         // re-decode some simple things which ARE allowed in filenames
         enc = enc.replace("+", "-");
-        enc = enc.replace("%2C", ",");
-        enc = enc.replace("%28", "(");
-        enc = enc.replace("%29", ")");
+        enc = urlReDecode(ALLOWED_CHARS_IN_AZURE_WIKI_FILENAMES, enc);
         return enc;
+    }
+
+    private static String urlReDecode(String charactesWhichShouldNotHaveBeenEncoded, String enc) {
+        Map<String,Character> redecodeMap = new HashMap<>();
+        charactesWhichShouldNotHaveBeenEncoded.chars().forEach(c -> {
+            redecodeMap.put(URLEncoder.encode( Character.toString(c), StandardCharsets.UTF_8) , Character.valueOf((char) c));
+        });
+        String result = enc;
+        for( Map.Entry<String, Character> entry : redecodeMap.entrySet() ) {
+            result = result.replace(entry.getKey(), ""+entry.getValue());
+        }
+        return result;
     }
 
     public static String format(String in) {
