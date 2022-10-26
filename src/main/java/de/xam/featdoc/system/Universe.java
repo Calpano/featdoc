@@ -100,9 +100,13 @@ public class Universe {
         List<ResultStep> resultingSteps = computeResultingSteps(scenario);
         SequenceDiagram sequenceDiagram = new SequenceDiagram(scenario.label());
         // participants
-        resultingSteps.stream().flatMap(rs -> Stream.of(rs.sourceSystem(), rs.target())).distinct().sorted().forEach(system -> sequenceDiagram.participant(system.id, system.label));
+        resultingSteps.stream().flatMap(rs -> Stream.of(rs.sourceSystem(), rs.targetSystem())).distinct().sorted().forEach(system -> sequenceDiagram.participant(system.id, system.label));
         // steps
-        resultingSteps.forEach(step -> sequenceDiagram.step(step.sourceSystem().id, step.message().timing() == Timing.Synchronous ? Arrow.SolidWithHead : Arrow.DottedAsync, step.target().id, MarkdownTool.format(step.message().name() + (step.feature() == null ? "" : " [" + step.feature().label + "]"))));
+        resultingSteps.forEach(step -> sequenceDiagram.step(
+                step.sourceSystem().id,
+                step.message().timing() == Timing.Synchronous ? Arrow.SolidWithHead : Arrow.DottedAsync,
+                step.targetSystem().id,
+                MarkdownTool.format(step.message().name() + (step.feature() == null ? "" : " [" + step.feature().label + "]"))));
         return sequenceDiagram;
     }
 

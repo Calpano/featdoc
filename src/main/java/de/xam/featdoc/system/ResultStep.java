@@ -35,16 +35,12 @@ public record ResultStep(ScenarioStep scenarioStep, int depth, System sourceSyst
         return depth == 0;
     }
 
-    /** The system which reacted on a trigger */
-    public System target() {
-        return rule().feature().system();
-    }
 
     @Override
     public String toString() {
         return String.format("%-10s --> %-10s : Msg=%-40s | Feat=%-20s | depth=%s | %s",
                 sourceSystem().label,
-                rule()==null? message.system().label :  target().label,
+                rule()==null? message.system().label :  rule.feature().system().label,
                 message().system()+"."+message().name()+"--"+message().direction(),
                 feature()==null ? "--" : feature().label(),
                 depth(),

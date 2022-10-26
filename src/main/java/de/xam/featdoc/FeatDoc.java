@@ -180,7 +180,7 @@ public class FeatDoc {
             table.row(""+rowNr++,
                     wikiContext.wikiLink(rs.sourceSystem()),
                     rs.message().isSynchronous() ? ARROW_LEFT_RIGHT_SOLID : ARROW_LEFT_RIGHT_DASHED,
-                    wikiContext.wikiLink(rs.target()),
+                    wikiContext.wikiLink(rs.targetSystem()),
                     rs.message().name(),
                     rs.messageComment() == null ? "   ":
                             "*"+rs.messageComment()+"*",
@@ -195,7 +195,7 @@ public class FeatDoc {
                 String.format("%s %s %s: **%s** %s [%s]",
                         wikiContext.wikiLink(rs.sourceSystem()),
                         rs.message().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
-                        wikiContext.wikiLink(rs.target()),
+                        wikiContext.wikiLink(rs.targetSystem()),
                         rs.message().name(),
                         rs.messageComment() == null? "" : " - *"+rs.messageComment()+"*",
                         rs.feature() == null ? wikiContext.i18n(Term.scenario) : wikiContext.wikiLink(rs.feature().system()) + "/" + rs.feature().label()
