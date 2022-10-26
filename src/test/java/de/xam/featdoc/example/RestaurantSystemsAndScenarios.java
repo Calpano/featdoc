@@ -29,7 +29,7 @@ public class RestaurantSystemsAndScenarios {
     }
     interface MobileOrderClient {
         Message createOrder = MOC.uiInput("Create Order");
-        Message addItemToOrder = MOC.uiAction("Add item to running order");
+        Message addItemToOrder = MOC.uiInput("Add item to running order");
         Message createBill = MOC.apiCall("Create bill");
 
         static void define() {

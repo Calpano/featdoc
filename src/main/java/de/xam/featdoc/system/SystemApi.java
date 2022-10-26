@@ -32,20 +32,4 @@ public interface SystemApi {
         return step(Message.Kind.WEB_HOOK, name);
     }
 
-    /**
-     * @deprecated use {@link #apiCall(String)}
-     */
-    @Deprecated
-    default Message syncCall(String name) {
-        return apiCall(name);
-    }
-
-    /**
-     * @deprecated use {@link #uiInput(String)}
-     */
-    @Deprecated
-    default Message uiAction(String label) {
-        return uiInput(label);
-    }
-
 }
