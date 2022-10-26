@@ -32,16 +32,21 @@ public class Feature implements IWikiLink {
         return rules.stream().flatMap(Rule::producedEvents);
     }
 
-    public Feature rule(Message trigger, Message... actions) {
-        if (actions == null || actions.length == 0)
-            throw new IllegalArgumentException("No actions given");
-        Rule.RuleWithTriggerBuilder builder = rule().feature(this).trigger(trigger, null);
-        Stream.of(actions).forEach(action -> builder.action(action, null));
+    public Feature rule(Message trigger, Message action1, Message... moreActions) {
+        Rule.RuleWithTriggerBuilder builder = rule().feature(this).trigger(trigger);
+        builder.action(action1);
+        if(moreActions!=null) {
+            Stream.of(moreActions).forEach(action -> builder.action(action));
+        }
         return builder.build();
     }
 
     public Rule.RuleWithTriggerBuilder rule(Message trigger, String comment) {
         return rule().trigger(trigger, comment);
+    }
+
+    public Rule.RuleWithTriggerBuilder rule(Message trigger) {
+        return rule(trigger,null);
     }
 
     public Rule.RuleBuilder rule() {
