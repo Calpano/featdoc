@@ -28,24 +28,23 @@ class UniverseTest {
     /** check rules:  ? --A.message--> A --A.message--> ? */
     @Test
     void testAAA() {
-        systemA.feature("rule-under-test").rule(systemA_call, systemA_call);
-        systemSink.feature("sink").rule(systemA_call, systemSink_call);
+        systemA.feature("rule-under-test").rule(systemA_call, systemA_event);
+        systemSink.feature("sink").rule(systemA_event, systemSink_call);
         Scenario scenario = universe.scenario("test").step(systemSource, systemA_call);
     }
     /** check rules:  ? --B.message--> A --A.message--> ? */
     @Test
     void testBAA() {
-        systemA.feature("rule-under-test").rule(systemB_call, systemA_call);
-        systemSink.feature("sink").rule(systemA_call, systemSink_call);
-        Scenario scenario = universe.scenario("test").step(systemSource, systemB_call);
+        systemA.feature("rule-under-test").rule(systemB_event, systemA_event);
+        systemSink.feature("sink").rule(systemA_event, systemSink_call);
+        Scenario scenario = universe.scenario("test").step(systemSource, systemB_event);
     }
     /** check rules:  ? --B.message--> A --B.message--> ? */
-    @Test
-    void testBAB() {
-        systemA.feature("rule-under-test").rule(systemB_call, systemB_call);
-        systemSink.feature("sink").rule(systemB_call, systemSink_call);
-        Scenario scenario = universe.scenario("test").step(systemSource, systemB_call);
-    }
+//    @Test
+//    void testBAB() {
+//        systemA.feature("rule-under-test").rule(systemB_event, systemB_call);
+//        Scenario scenario = universe.scenario("test").step(systemSource, systemB_event);
+//    }
     /** check rules:  ? --A.message--> A --B.message--> ? */
     @Test
     void testForeignSystem() {
