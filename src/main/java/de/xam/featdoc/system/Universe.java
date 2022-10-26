@@ -15,6 +15,7 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -100,7 +101,12 @@ public class Universe {
         List<ResultStep> resultingSteps = computeResultingSteps(scenario);
         SequenceDiagram sequenceDiagram = new SequenceDiagram(scenario.label());
         // participants
-        resultingSteps.stream().flatMap(rs -> Stream.of(rs.sourceSystem(), rs.targetSystem())).distinct().sorted().forEach(system -> sequenceDiagram.participant(system.id, system.label));
+        resultingSteps.stream()
+                .flatMap(rs -> Stream.of(rs.sourceSystem(), rs.targetSystem()))
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .forEach(system -> sequenceDiagram.participant(system.id, system.label));
         // steps
         resultingSteps.forEach(step -> sequenceDiagram.step(
                 step.sourceSystem().id,
