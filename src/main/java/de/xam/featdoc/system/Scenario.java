@@ -9,10 +9,7 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -20,7 +17,6 @@ public class Scenario implements IWikiLink {
     private final String label;
     private final List<ScenarioStep> scenarioSteps = new ArrayList<>();
     private final Universe universe;
-    private Map<Condition, Condition.Variant> variants = new HashMap<>();
 
     public Scenario(Universe universe, String label) {
         this.universe = universe;
@@ -82,12 +78,6 @@ public class Scenario implements IWikiLink {
     }
 
 
-    public Scenario variant(Condition.Variant variant) {
-        Condition.Variant prev = variants.put(variant.condition(), variant);
-        if (prev != null)
-            throw new IllegalStateException("condition '" + variant.condition().label() + "' already set to '" + prev.label() + "'");
-        return this;
-    }
 
     @Override
     public @Nullable String wikiFolder(I18n i18n) {
