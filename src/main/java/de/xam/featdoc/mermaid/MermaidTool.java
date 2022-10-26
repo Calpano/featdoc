@@ -25,6 +25,7 @@ public class MermaidTool {
     }
 
     public static void generateMermaidSyntax(SequenceDiagram sequenceDiagram, LineWriter lineWriter) {
+        lineWriter.writeLine("sequenceDiagram");
         lineWriter.writeLine("%%{");
         lineWriter.writeLine("    init: {");
         lineWriter.writeLine("        'fontFamily': 'Tahoma, Arial, Sans-Serif',");
@@ -34,7 +35,6 @@ public class MermaidTool {
         lineWriter.writeLine("        }");
         lineWriter.writeLine("    }");
         lineWriter.writeLine("}%%");
-        lineWriter.writeLine("sequenceDiagram");
         for (Participant participant : sequenceDiagram.participants()) {
             lineWriter.writeLine(INDENT + participant.mermaid());
         }
