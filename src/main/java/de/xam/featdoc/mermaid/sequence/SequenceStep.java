@@ -6,7 +6,7 @@ package de.xam.featdoc.mermaid.sequence;
  * @param lifetimeEvent
  * @param to
  * @param message
- * @param comment       to be rendered in the source code of the diagram as comment
+ * @param comment       to be rendered in the sourceSystem code of the diagram as comment
  */
 public record SequenceStep(String from, Arrow arrow, LifetimeEvent lifetimeEvent, String to, String message,
                            String comment) {

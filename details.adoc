@@ -1,0 +1,227 @@
+= Featdoc Details
+:toc:
+
+== Data Model
+Featdoc has two main concepts:
+
+System::
+Defines its input messages and output messages. Also has simple rules, which define which trigger message causes which action messages.
+
+Scenario::
+Sends a message to a system from the outside. This usually starts a chain of reactions from systems.
+
+
+[plantuml,arch,svg]
+....
+hide empty members
+enum Timing {
+    Synchron
+    Asynchron
+}
+enum Direction {
+    Incoming
+    Outgoing
+}
+class Scenario
+class Step {
+    comment
+}
+class System
+class Rule
+class Trigger {
+    comment
+}
+class Action {
+    comment
+}
+class Universe
+
+Universe --> "n" Scenario
+Scenario -o "n" Step
+Universe --> "n" System
+Step -> System : source
+System -o "n" Feature
+Feature -o "n" Rule
+Rule --o Trigger
+Rule --o "n" Action
+Trigger --> Message
+Action --> Message
+Message --o Timing
+Message --o Direction
+Step --> Message : Every step sends\na message
+System o-- Message : The system, \nwhich defines \nthe contract
+....
+
+=== Message
+A message is produced by one system and consumed by zero or more systems.
+
+.Owner
+A message is **owned** by a system.
+This system is the owner of the API, e.g. the vendor of the system
+defines the message structure and contents. Also, the vendor will
+likely provides API docs for the message.
+
+.Kinds of Messages
+[%header,cols="e,e,a"]
+|===
+| Direction | Timing | Examples
+.2+| incoming .2+| synchronous | A request/API call in a REST API
+| A user interface input (e.g. click)
+.2+| outgoing .2+| synchronous | A REST Callback, also called Web Hook
+| A user interface result
+| incoming | asynchronous | An incoming event
+| outgoing | asynchronous | An outgoing event
+|===
+
+This allows to represent 4 integration patterns:
+
+Consuming Transformer::
+
+* System A is given and produces messages X (events)
+* System B listens to X messages and sends its own Y messages (events)
+** Other consumers might also listen to X
+* Consumers listen to messages Y
+
++
+.System B is a Consuming Transformer
+[plantuml,messagesConsumingTransformer,svg]
+....
+hide circles
+hide empty members
+class A as "System A" {
+    outgoing X
+}
+class B as "System B" {
+    rule: X => Y
+    outgoing Y
+}
+class C as "Consumers" {
+    rule: Y => ...
+}
+class Bx as "Other X Consumers"
+A -> B : A: outgoing message X
+A --> Bx : A: outgoing message X
+B -> "n" C: B: outgoing message Y
+....
+
+
+Producing Transformer::
+* Producers send message X (they call System B)
+* System B is triggered from producers with X and transforms to Y
+* System C defines messages Y
+
++
+.System B is a Producing Transformer
+[plantuml,messagesProducingTransformer,svg]
+....
+hide circles
+hide empty members
+class A as "Producers" {
+    rule: ... => X
+}
+class B as "System B" {
+    incoming X
+    rule: X => Y
+}
+class C as "System C" {
+    incoming Y
+}
+A "n" -> B : B: incoming message X
+B -> C : B: incoming message Y
+....
+
+Foreign System::
+
+* System B defines both input message (X) and output messages (Y)
+* Producers need to adapt and send X messages
+* Consumers adapt and accept Y messages
+
++
+.System B is a Foreign System
+[plantuml,messagesForeign,svg]
+....
+hide circles
+hide empty members
+class A as "Producers" {
+    rule: ... => X
+}
+class B as "System B" {
+    incoming X
+    rule: X => Y
+    outgoing Y
+}
+class C as "Consumers" {
+    rule: Y => ...
+}
+A -> B : B: incoming message X
+B -> C : B: outgoing message Y
+....
+
+
+Bridge::
+
+* System A is given and owns outgoing message X
+* System C is given and owns incoming message Y
+* System B must accept X and send Y
+
++
+.System B is a Bridge
+[plantuml,messagesBridge,svg]
+....
+hide circles
+hide empty members
+class A as "System A" {
+    outgoing X
+}
+class B as "System B" {
+    rule: X => Y
+}
+class C as "System C" {
+    incoming Y
+}
+A -> B : A: outgoing message X
+B -> C : B: incoming message Y
+....
+
+
+=== Scenario
+There are several kinds of initial scenario steps:
+
+Sender: Source produces its own event::
+The source system produces an outgoing message X
+
+* There can be any number of receivers
+
++
+[plantuml,sourceProducer,svg]
+....
+hide circles
+hide empty members
+class A as "Source System A" {
+    outgoing X
+}
+class X as "Consumers" {
+    rule: X => ...
+}
+A -> X : A: Outgoing message X
+....
+
+
+Caller: Source produces a foreign event::
+The source system produces a message X, which is defined in another system.
+
+* There can only be one receiver
+
++
+[plantuml,sourceCalls,svg]
+....
+hide circles
+hide empty members
+class A as "Source System A" {
+}
+class B as "System B" {
+    incoming X
+}
+A -> B : B: Incoming message X
+....
+

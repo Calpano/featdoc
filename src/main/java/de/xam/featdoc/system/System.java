@@ -15,6 +15,9 @@ import java.util.stream.Stream;
 
 import static de.xam.featdoc.Util.add;
 
+/**
+ * Systems are compared by sortOrder and label.
+ */
 public class System implements IWikiLink, Comparable<System>, SystemApi {
     @Override
     public boolean equals(Object o) {
@@ -37,19 +40,19 @@ public class System implements IWikiLink, Comparable<System>, SystemApi {
     }
 
     final int sortOrder;
-    final List<Feature> features = new ArrayList<>();
-    private final List<Message> messages = new ArrayList<>();
+    final List<Feature> featureList = new ArrayList<>();
+    private final List<Message> messageList = new ArrayList<>();
 
     /***
      *
-     * @param id to be used in generated Mermaid sequence diagrams
-     * @param label ..
+     * @param mermaidDiagramId to be used in generated Mermaid sequence diagrams
+     * @param name pretty name with Umlauts and all
      * @param wikiName suitable for a wiki page name / link target
      * @param sortOrder first sort criterion; name is used as second
      */
-    public System(String id, String label, String wikiName, int sortOrder) {
-        this.id = id;
-        this.label = label;
+    public System(String mermaidDiagramId, String name, String wikiName, int sortOrder) {
+        this.id = mermaidDiagramId;
+        this.label = name;
         this.wikiName = wikiName;
         this.sortOrder = sortOrder;
     }
@@ -57,7 +60,7 @@ public class System implements IWikiLink, Comparable<System>, SystemApi {
 
     @Override
     public Message step(Message.Direction direction, Timing timing, String name) {
-        return add(messages, new Message(this, direction, timing,name));
+        return add(messageList, new Message(this, direction, timing,name));
     }
 
 
@@ -72,17 +75,17 @@ public class System implements IWikiLink, Comparable<System>, SystemApi {
 
 
     public List<Message> events() {
-        return Collections.unmodifiableList(messages);
+        return Collections.unmodifiableList(messageList);
     }
 
     public Feature feature( String name) {
         Feature feature = new Feature(this, name);
-        features.add(feature);
+        featureList.add(feature);
         return feature;
     }
 
     public List<Feature> features() {
-        return Collections.unmodifiableList(features);
+        return Collections.unmodifiableList(featureList);
     }
 
     public boolean isProducing(Message message) {
@@ -109,7 +112,7 @@ public class System implements IWikiLink, Comparable<System>, SystemApi {
 
 
     public Stream<Message> producedEvents() {
-        return features.stream().flatMap(feature -> feature.producedEvents()).distinct();
+        return featureList.stream().flatMap(feature -> feature.producedEvents()).distinct();
     }
 
     public String localTarget() {

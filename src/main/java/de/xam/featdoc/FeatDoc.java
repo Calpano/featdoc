@@ -59,8 +59,8 @@ public class FeatDoc {
         Set<Message> allMessages = universe.systems().stream().flatMap(system -> system.events().stream()).collect(Collectors.toSet());
         Set<Message> usedInRules = new HashSet<>();
         universe.systems().stream().flatMap(System::rules).forEach(rule -> {
-            usedInRules.add(rule.trigger().incomingMessage());
-            usedInRules.addAll(rule.actions().stream().map(Rule.Action::outgoingMessage).collect(Collectors.toSet()));
+            usedInRules.add(rule.trigger().message());
+            usedInRules.addAll(rule.actions().stream().map(Rule.Action::message).collect(Collectors.toSet()));
         });
         allMessages.removeAll(usedInRules);
         allMessages.forEach(message -> lineWriter.writeLine("* %s ([%s](%s))",
@@ -77,7 +77,7 @@ public class FeatDoc {
                 rule.feature().label(),
                 rule.feature().system().label(),
                 rule.feature().system().wikiLink(wikiContext.i18n()),
-                rule.trigger().incomingMessage().name()));
+                rule.trigger().message().name()));
     }
 
     private static void eventsToMarkdown(Universe universe, System system, IWikiContext wikiContext, Predicate<Message> eventPredicate, LineWriter lineWriter) {
@@ -95,7 +95,7 @@ public class FeatDoc {
                     "    * %s %s %s, %s %s%n",
                     ARROW_RIGHT_LEFT_SOLID,
                     wikiContext.i18n(Term.callFrom),
-                    wikiContext.wikiLink(producingScenarioStep.source()),
+                    wikiContext.wikiLink(producingScenarioStep.sourceSystem()),
                     wikiContext.i18n(Term.scenario),
                     wikiContext.wikiLink(producingScenarioStep.scenario())));
         });
@@ -178,7 +178,7 @@ public class FeatDoc {
         int rowNr = 1;
         for (ResultStep rs : resultingSteps) {
             table.row(""+rowNr++,
-                    wikiContext.wikiLink(rs.source()),
+                    wikiContext.wikiLink(rs.sourceSystem()),
                     rs.message().isSynchronous() ? ARROW_LEFT_RIGHT_SOLID : ARROW_LEFT_RIGHT_DASHED,
                     wikiContext.wikiLink(rs.target()),
                     rs.message().name(),
@@ -193,7 +193,7 @@ public class FeatDoc {
         legend(wikiContext,lineWriter);
         List<StringTree> trees = universe.toTrees(scenario, (rs) ->
                 String.format("%s %s %s: **%s** %s [%s]",
-                        wikiContext.wikiLink(rs.source()),
+                        wikiContext.wikiLink(rs.sourceSystem()),
                         rs.message().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
                         wikiContext.wikiLink(rs.target()),
                         rs.message().name(),
@@ -240,16 +240,16 @@ public class FeatDoc {
                         * %s: %s **%s** in %s [%s]""",
                         wikiContext.i18n(Term.rule),
                         wikiContext.i18n(Term.if_),
-                        rule.trigger().incomingMessage().name(),
-                        rule.trigger().incomingMessage().system().label(),
-                        timing(rule.trigger().incomingMessage(),wikiContext));
+                        rule.trigger().message().name(),
+                        rule.trigger().message().system().label(),
+                        timing(rule.trigger().message(),wikiContext));
                 for (Rule.Action action : rule.actions()) {
                     lineWriter.writeLine("    * %s %s **%s** in %s [%s]",
                             ARROW_LEFT_RIGHT_RULE,
                             wikiContext.i18n(Term.then_),
-                            action.outgoingMessage().name(),
-                            wikiContext.wikiLink(action.outgoingMessage().system()),
-                            timing(action.outgoingMessage(),wikiContext)
+                            action.message().name(),
+                            wikiContext.wikiLink(action.message().system()),
+                            timing(action.message(),wikiContext)
                     );
                 }
                 if (rule.trigger().comment() != null) {

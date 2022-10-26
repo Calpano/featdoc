@@ -9,7 +9,7 @@ public enum Term {
     callsTo("Outgoing Calls to", "Aufrufe zu" ),
     feature("Feature", "Feature"),
     features("Features","Features"),
-    footer("Generated on %s by **featdoc**", "Erzeugt am %s von **featdoc**"),
+    footer("Generated on %s by **[featdoc](https://github.com/Calpano/featdoc)**", "Erzeugt am %s von **featdoc**"),
     if_("IF","WENN"),
     incomingApiCalls("Incoming Synchronous API Calls","Eingehende API-Aufrufe" ),
     incomingAsyncEvents("Incoming Asynchronous Events", "Eingehende Events"),

@@ -15,6 +15,7 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -28,7 +29,13 @@ public class Universe {
     private final List<System> systems = new ArrayList<>();
     private final List<Condition> conditions = new ArrayList<>();
 
-
+    public List<ResultStep> computeResultingSteps(Scenario scenario) {
+        List<ResultStep> resultingSteps = new ArrayList<>();
+        for (ScenarioStep step : scenario.steps()) {
+            reactOn(step, resultingSteps::add);
+        }
+        return resultingSteps;
+    }
 
     public Condition condition(String label) {
         return add(conditions, new Condition(label));
@@ -39,9 +46,9 @@ public class Universe {
     }
 
     public void forEachEdge(BiConsumer<System, System> source_target) {
-        scenarios().stream().flatMap(scenario -> scenario.steps().stream()).forEach(scenarioStep -> source_target.accept(scenarioStep.source(), scenarioStep.target()));
+        scenarios().stream().flatMap(scenario -> scenario.steps().stream()).forEach(scenarioStep -> source_target.accept(scenarioStep.sourceSystem(), scenarioStep.message().system()));
 
-        systems().stream().flatMap(System::rules).forEach(rule -> rule.actions.forEach(target -> source_target.accept(rule.trigger.incomingMessage().system(), target.outgoingMessage().system())));
+        systems().stream().flatMap(System::rules).forEach(rule -> rule.actions().forEach(target -> source_target.accept(rule.trigger().message().system(), target.message().system())));
     }
 
     public Scenario scenario(String title) {
@@ -50,7 +57,7 @@ public class Universe {
 
     public Stream<ScenarioStep> scenarioStepsProducing(Message message) {
         // TODO equals?
-        return scenarios.stream().flatMap(scenario -> scenario.steps().stream()).filter(scenarioStep -> scenarioStep.outgoingMessage().equals(message));
+        return scenarios.stream().flatMap(scenario -> scenario.steps().stream()).filter(scenarioStep -> scenarioStep.message().equals(message));
     }
 
     public List<Scenario> scenarios() {
@@ -58,11 +65,11 @@ public class Universe {
     }
 
     public System system(String id, String name, String wikiName) {
-        return add(systems, new System(id, name, wikiName,0));
+        return add(systems, new System(id, name, wikiName, 0));
     }
 
     public System system(String id, String name, String wikiName, int sortOrder) {
-        return add(systems, new System(id, name, wikiName,sortOrder));
+        return add(systems, new System(id, name, wikiName, sortOrder));
     }
 
     public List<System> systems() {
@@ -93,18 +100,15 @@ public class Universe {
         List<ResultStep> resultingSteps = computeResultingSteps(scenario);
         SequenceDiagram sequenceDiagram = new SequenceDiagram(scenario.label());
         // participants
-        resultingSteps.stream().flatMap(rs -> Stream.of(rs.source(), rs.target())).distinct().sorted().forEach(system -> sequenceDiagram.participant(system.id, system.label));
+        resultingSteps.stream().flatMap(rs -> Stream.of(rs.sourceSystem(), rs.target())).distinct().sorted().forEach(system -> sequenceDiagram.participant(system.id, system.label));
         // steps
-        resultingSteps.forEach(step -> sequenceDiagram.step(step.source().id,
-                step.message().timing() == Timing.Synchronous ? Arrow.SolidWithHead : Arrow.DottedAsync,
-                step.target().id,
-                MarkdownTool.format(step.message().name() + (step.feature() == null ? "" : " [" + step.feature().label + "]"))));
+        resultingSteps.forEach(step -> sequenceDiagram.step(step.sourceSystem().id, step.message().timing() == Timing.Synchronous ? Arrow.SolidWithHead : Arrow.DottedAsync, step.target().id, MarkdownTool.format(step.message().name() + (step.feature() == null ? "" : " [" + step.feature().label + "]"))));
         return sequenceDiagram;
     }
 
     public List<StringTree> toTrees(Scenario scenario, Function<ResultStep, String> toMarkdown) {
         Deque<StringTree> stack = new LinkedList<>();
-        StringTree root = new StringTree("ROOT Szenario: "+scenario.label());
+        StringTree root = new StringTree("ROOT Szenario: " + scenario.label());
         stack.add(root);
         List<ResultStep> resultingSteps = computeResultingSteps(scenario);
         int depth = 0;
@@ -125,47 +129,80 @@ public class Universe {
         return trees;
     }
 
-    public List<ResultStep> computeResultingSteps(Scenario scenario) {
-        List<ResultStep> resultingSteps = new ArrayList<>();
-        for (ScenarioStep step : scenario.steps()) {
-            // systems react
-            reactOnEventAndMaterializeActions(step, 0, step.source(), step.target(), step.outgoingMessage(), step.commentOnMessage(), resultingSteps::add);
-        }
-        return resultingSteps;
+    private Stream<Rule> rules() {
+        return systems().stream().flatMap(System::rules);
+    }
+
+    private void reactOn(ScenarioStep step, Consumer<ResultStep> resultConsumer) {
+        ResultStep initialStep = ResultStep.direct(step, 0, step.sourceSystem(), step.message(), step.commentOnMessage(),
+                step.message().isIncoming() ? step.message().system() : null);
+        reactOn(initialStep, resultConsumer);
     }
 
     /**
-     * @param causeFromScenario     initial scenario step
-     * @param depth                 in tree from initial scenario step
-     * @param source                sending system
-     * @param target                receiving system
-     * @param triggerMessage        a scenario step or rule action
-     * @param triggerMessageComment a comment on the message
+     * Each {@link ResultStep} combines the information from a outgoing action/scenario with an incoming trigger.
+     * @param input
      * @param resultConsumer
      */
-    private void reactOnEventAndMaterializeActions(ScenarioStep causeFromScenario, int depth, System source, @Nullable System target, Message triggerMessage, @Nullable String triggerMessageComment, Consumer<ResultStep> resultConsumer) {
-        if (target != null) {
-            resultConsumer.accept(new ResultStep(null, null, triggerMessage, triggerMessageComment, depth, causeFromScenario, source, target));
-        }
-        forEachRule( (feature,rule) -> {
-            if (rule.trigger.isTriggeredBy(triggerMessage)) {
-                for (Rule.Action action : rule.actions) {
-
-                    resultConsumer.accept(new ResultStep(feature, rule, action.outgoingMessage(), action.comment(), depth+1, causeFromScenario, triggerMessage.system(), action.outgoingMessage().system()));
-                    // recursively react
-                    reactOnEventAndMaterializeActions(causeFromScenario, depth + 1, action.outgoingMessage().system(), null, action.message(),action.comment(), resultConsumer);
+    private void reactOn(ResultStep input, Consumer<ResultStep> resultConsumer) {
+        AtomicBoolean isAnyRuleTriggered = new AtomicBoolean(false);
+        rules().forEach(rule -> {
+            if(rule.trigger().isTriggeredBy(input.message())) {
+                isAnyRuleTriggered.set(true);
+                ResultStep inputAndTriggerStep = ResultStep.indirect(
+                        input.scenarioStep(),
+                        input.depth(),
+                        input.sourceSystem(),
+                        input.message(),
+                        combineComments(input.messageComment(),rule.trigger().comment()),
+                        rule.feature().system(),
+                        rule);
+                resultConsumer.accept(inputAndTriggerStep);
+                for(Rule.Action action : rule.actions()) {
+                    ResultStep outputStep = ResultStep.indirect(
+                            input.scenarioStep(),
+                            input.depth()+1,
+                            rule.feature().system(),
+                            action.message(),
+                            action.comment(),
+                            // if we CALL another system, we know the targetSystem
+                            // if we emit an event, we don't know who listens
+                            action.message().isIncoming() ? action.message().system() : null,
+                            rule
+                    );
+                    reactOn(outputStep, resultConsumer);
                 }
             }
-        } );
-    }
-
-    private void forEachRule( BiConsumer<Feature,Rule> feature_rule) {
-        for (System system : systems()) {
-            for (Feature feature : system.features) {
-                for (Rule rule : feature.rules) {
-                    feature_rule.accept(feature,rule);
-                }
-            }
+        });
+        if(!isAnyRuleTriggered.get()) {
+            resultConsumer.accept(input);
         }
     }
+
+    private static @Nullable String combineComments(@Nullable  String scenarioOrActionComment, @Nullable  String ruleTriggerComment) {
+        if (scenarioOrActionComment == null) {
+            if (ruleTriggerComment == null) return null;
+            else return String.format("Trigger: %s", ruleTriggerComment);
+        } else if (ruleTriggerComment == null) {
+            return null;
+        } else {
+            return String.format("%s / Trigger: %s", scenarioOrActionComment, ruleTriggerComment);
+        }
+    }
+
+    public Stream<Feature> features() {
+        return systems().stream().flatMap(system -> system.featureList.stream());
+    }
+
+    /**
+     * @throws  IllegalStateException if anything is invalid
+     */
+    public void validate() {
+        features().forEach(feature -> {
+            if(feature.hasUnfinishedRules()) {
+                throw new IllegalStateException(String.format("System '%s' in feature '%s' has an unfinished rule. Likely you forgot to call 'build()'.", feature.system().label, feature.label));
+            }
+        });
+    }
+
 }

@@ -9,6 +9,7 @@ import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.CM;
 import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.CUSTOMER;
 import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.MOC;
 import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.POS;
+import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.UNIVERSE;
 import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.WAITER;
 
 
@@ -25,7 +26,7 @@ public class RestaurantSystemsAndScenarios {
     }
 
     interface Customer {
-        Message receiveBill = CUSTOMER.asyncEventOutgoing("Receive bill");
+        Message receiveBill = CUSTOMER.asyncEventIncoming("Receive bill");
     }
     interface MobileOrderClient {
         Message createOrder = MOC.uiInput("Create Order");
@@ -64,7 +65,7 @@ public class RestaurantSystemsAndScenarios {
         Message eventMilkConsumed = CM.asyncEventOutgoing("milk consumed");
 
         static void define() {
-            WAITER.feature("Coffee Making")
+            CM.feature("Coffee Making")
                     // example with comments
                     .rule(espresso, "100% Arabica").action(eventBeansConsumed,"Or error on missing beans").build()
                     .rule(espressoDouble, eventBeansConsumed, eventBeansConsumed) //
@@ -102,10 +103,9 @@ public class RestaurantSystemsAndScenarios {
      *
      */
     public static void defineScenarios() {
-        Systems.UNIVERSE.scenario("Lunch-Customer (in a hurry)") //
-                .step(CUSTOMER, WAITER, Waiter.orderEspresso)//
-                .step(CUSTOMER, Waiter.customerWantsToPay, "Today no credit cards") //
-        ;
+        Systems.UNIVERSE.scenario("Lunch-Customer (in a hurry)")
+                .step(CUSTOMER, Waiter.orderEspresso)
+                .step(CUSTOMER, Waiter.customerWantsToPay, "Today no credit cards");
     }
 
     public static void defineSystems() {

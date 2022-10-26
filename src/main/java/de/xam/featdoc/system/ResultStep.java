@@ -3,30 +3,52 @@ package de.xam.featdoc.system;
 import javax.annotation.Nullable;
 
 /**
- * @param feature
- * @param rule
- * @param message          result of applying a rule or scenario step
- * @param messageComment  an optional comment on the message
- * @param depth             0 = is defined just like this in the scenario; > 0: how indirect the action is triggered
- * @param causeFromScenario
- * @param source
- * @param target
+*  @param scenarioStep  initially causing a chain of system reactions
+ * @param depth             depth in tree from initial scenario step. 0 = is defined just like this in the scenario; > 0: how indirect the action is triggered
+ * @param sourceSystem produced the message
+ * @param targetSystem consumed the message
+ * @param message           result of applying a rule or scenario step
+ * @param messageComment    an optional comment on the message
+ * @param rule defined in any system
  */
-public record ResultStep(@Nullable Feature feature, @Nullable Rule rule, Message message, String messageComment, int depth,
-                         ScenarioStep causeFromScenario, System source, System target) {
+public record ResultStep(ScenarioStep scenarioStep, int depth, System sourceSystem, Message message,
+                         String messageComment,
+                         System targetSystem,
+
+                         @Nullable Rule rule
+) {
+
+
+    public static ResultStep direct(ScenarioStep scenarioStep, int depth, System sourceSystem, Message message, String messageComment, System targetSystem) {
+        return new ResultStep(scenarioStep, depth, sourceSystem, message, messageComment, targetSystem,null);
+    }
+
+    public static ResultStep indirect(ScenarioStep scenarioStep, int depth, System sourceSystem, Message message, String messageComment, System targetSystem,  Rule rule) {
+        return new ResultStep(scenarioStep, depth, sourceSystem, message, messageComment, targetSystem, rule);
+    }
+
+    public @Nullable Feature feature() {
+        return rule == null ? null : rule.feature();
+    }
 
     public boolean isScenario() {
         return depth == 0;
     }
 
+    /** The system which reacted on a trigger */
+    public System target() {
+        return rule().feature().system();
+    }
+
     @Override
     public String toString() {
-        return String.format("%-10s --> %-10s : Msg=%-40s | Feat=%-20s | depth=%s",
-                source().label,
-                target().label,
+        return String.format("%-10s --> %-10s : Msg=%-40s | Feat=%-20s | depth=%s | %s",
+                sourceSystem().label,
+                rule()==null? message.system().label :  target().label,
                 message().system()+"."+message().name()+"--"+message().direction(),
                 feature()==null ? "--" : feature().label(),
-                depth()
+                depth(),
+                messageComment()
         );
     }
 }

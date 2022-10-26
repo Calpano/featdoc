@@ -37,18 +37,21 @@ public class Scenario implements IWikiLink {
     private static final Logger log = getLogger(Scenario.class);
 
     /**
-     * @param source  sending system
+     * @param sourceSystem  initial source system
      * @param message to be sent
      * @param comment optional comment on this one particular trigger message (event)
      * @return Scenario for further extension
      */
-    public Scenario step(System source, Message message, String comment) {
-        ScenarioStep scenarioStep = new ScenarioStep(this, source, message, comment);
+    public Scenario step(System sourceSystem, Message message, String comment) {
+        if(message.isOutgoing() && !message.system().equals(sourceSystem)) {
+            log.warn("Calling an outgoing message ({}) from another system ({}) doesn't make sense.",message,sourceSystem);
+        }
+        ScenarioStep scenarioStep = new ScenarioStep(this, sourceSystem, message, comment);
         scenarioSteps.add(scenarioStep);
         return this;
     }
 
-    public Scenario step(System source, System target, Message message) {
+    public Scenario step(System source, Message message) {
         return step(source, message, null);
     }
 

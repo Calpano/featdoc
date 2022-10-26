@@ -23,7 +23,7 @@ public class Rule {
         RuleWithTriggerBuilder trigger(Message triggerMessage, String triggerComment);
 
         default RuleWithTriggerBuilder trigger(Message triggerMessage) {
-            return trigger(triggerMessage,null);
+            return trigger(triggerMessage, null);
         }
     }
 
@@ -33,7 +33,7 @@ public class Rule {
         RuleWithTriggerBuilder action(Message action, String comment);
 
         default RuleWithTriggerBuilder action(Message action) {
-            return action(action,null);
+            return action(action, null);
         }
 
         RuleWithTriggerBuilder actions(Message... actions);
@@ -41,40 +41,37 @@ public class Rule {
         Feature build();
     }
 
-    public record Trigger(Message incomingMessage, @Nullable String comment) implements RulePart {
+    public record Trigger(Message message, @Nullable String comment) implements RulePart {
+        public Trigger {
+            if (message == null)
+                throw new IllegalArgumentException();
+        }
+
         public boolean isTriggeredBy(Message message) {
             return message().name().equals(message.name()) && message().system().equals(message.system());
         }
 
-        @Override
-        public Message message() {
-            return incomingMessage();
-        }
-
-        public Trigger {
-            if (incomingMessage == null)
-                throw new IllegalArgumentException();
-        }
     }
 
-    public record Action(Message outgoingMessage, @Nullable String comment) implements RulePart {
-        /** Alias for outgoingMessage */
-        @Override
-        public Message message() {
-            return outgoingMessage();
-        }
-
+    public record Action(Message message, @Nullable String comment) implements RulePart {
         public Action {
-            if (outgoingMessage == null)
+            if (message == null)
                 throw new IllegalArgumentException();
         }
+
     }
 
-   private static class InternalRuleBuilder implements RuleBuilder, RuleWithTriggerBuilder {
+    static class InternalRuleBuilder implements RuleBuilder, RuleWithTriggerBuilder {
 
         private final List<Action> actions = new ArrayList<>();
         private Feature feature;
         private Trigger trigger;
+
+        @Override
+        public RuleWithTriggerBuilder action(Message message, String comment) {
+            actions.add(new Action(message, comment));
+            return this;
+        }
 
         @Override
         public RuleWithTriggerBuilder actions(Message... actions) {
@@ -86,7 +83,8 @@ public class Rule {
 
         @Override
         public Feature build() {
-            feature.rules.add( new Rule(feature, this.trigger, actions));
+            feature.rules.add(new Rule(feature, this.trigger, actions));
+            feature.rulesUnderConstruction.remove(this);
             return feature;
         }
 
@@ -96,36 +94,50 @@ public class Rule {
             return this;
         }
 
+        @Override
+        public RuleWithTriggerBuilder trigger(Message triggerMessage, String triggerComment) {
+            if(triggerMessage==null)
+                throw new IllegalArgumentException("Trigger is null");
+            this.trigger = new Trigger(triggerMessage, triggerComment);
+            feature.rulesUnderConstruction.add(this);
+            return this;
+        }
+
         public RuleWithTriggerBuilder trigger(Message triggerMessage) {
             return trigger(triggerMessage, null);
         }
-
-        @Override
-        public RuleWithTriggerBuilder trigger(Message triggerMessage, String triggerComment) {
-            assert triggerMessage != null;
-            this.trigger = new Trigger(triggerMessage, triggerComment);
-            return this;
-        }
-
-        @Override
-        public RuleWithTriggerBuilder action(Message message, String comment) {
-            actions.add(new Action(message, comment));
-            return this;
-        }
     }
 
-    final Feature feature;
-    final List<Action> actions;
-    final Trigger trigger;
+    private final Feature feature;
+    private final List<Action> actions;
+    private final Trigger trigger;
 
 
-    public Rule(Feature feature, Trigger trigger, List<Action> actions) {
-        assert feature != null;
-        assert trigger != null;
-        assert actions != null && !actions.isEmpty();
+    /**
+     * @param feature
+     * @param trigger
+     * @param actions may be empty/null if this system is just listening
+     */
+    public Rule(Feature feature, Trigger trigger, @Nullable List<Action> actions) {
+        if (trigger == null)
+            throw new IllegalArgumentException("null-trigger");
+        if (trigger.message().isIncoming() && !trigger.message().system().equals(feature.system())) {
+            throw new IllegalArgumentException(String.format("Cannot consume an incoming message '%s' (defined in system '%s') in rule of system '%s' -- see feature '%s'",
+                    trigger.message.name(),
+                    trigger.message.system().label,
+                    feature.system().label,
+                    feature.label));
+        }
+        this.actions = actions == null ? new ArrayList<>() : actions;
+        for (Action action : actions) {
+            if (action.message().isOutgoing() && !action.message().system().equals(feature.system())) {
+                throw new IllegalArgumentException(String.format("Cannot produce an outgoing message '%s' (defined in system '%s') in rule of system '%s' -- see feature '%s'",
+                        action.message().name(),
+                        action.message().system().label, feature.system().label, feature.label));
+            }
+        }
         this.feature = feature;
         this.trigger = trigger;
-        this.actions = actions;
     }
 
     public static RuleBuilder builder(Feature feature) {
@@ -141,7 +153,7 @@ public class Rule {
     }
 
     public Stream<Message> producedEvents() {
-        return actions.stream().map(Action::outgoingMessage);
+        return actions.stream().map(Action::message);
     }
 
     public String toString() {

@@ -1,6 +1,7 @@
 package de.xam.featdoc.system;
 
 import de.xam.featdoc.I18n;
+import de.xam.featdoc.Util;
 import de.xam.featdoc.wiki.IWikiLink;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,10 +15,15 @@ public class Feature implements IWikiLink {
     final String label;
     final List<Rule> rules = new ArrayList<>();
     private final System system;
+    public List<Rule.InternalRuleBuilder> rulesUnderConstruction = new ArrayList<>();
 
     public Feature(System system, String label) {
         this.label = label;
         this.system = system;
+    }
+
+    public boolean hasUnfinishedRules() {
+        return !rulesUnderConstruction.isEmpty();
     }
 
     public boolean isProducing(Message message) {
@@ -36,7 +42,7 @@ public class Feature implements IWikiLink {
         Rule.RuleWithTriggerBuilder builder = rule().feature(this).trigger(trigger);
         builder.action(action1);
         if(moreActions!=null) {
-            Stream.of(moreActions).forEach(action -> builder.action(action));
+            Stream.of(moreActions).forEach(builder::action);
         }
         return builder.build();
     }

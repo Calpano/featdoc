@@ -40,6 +40,14 @@ public record Message(System system, Direction direction, Timing timing, String 
         return timing() == Timing.Asynchronous;
     }
 
+    public boolean isOutgoing() {
+        return direction() == Direction.OUTGOING;
+    }
+
+    public boolean isIncoming() {
+        return direction() == Direction.INCOMING;
+    }
+
     public boolean isSynchronous() {
         return timing() == Timing.Synchronous;
     }

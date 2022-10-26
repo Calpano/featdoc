@@ -27,7 +27,7 @@ public class StringTree implements Comparable<StringTree> {
      * Takes O(2n) space with n=number of pairs; Runs in O(n)
      *
      * @param pairs
-     * @return a tree of depth n using all (source,target) pairs to construct the tree
+     * @return a tree of depth n using all (sourceSystem,target) pairs to construct the tree
      */
     public static StringTree toTree(final ListMultimap<String, String> pairs) {
         final Map<String, StringTree> map = new HashMap<>();
