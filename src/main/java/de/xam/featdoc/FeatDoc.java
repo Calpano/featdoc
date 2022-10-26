@@ -11,6 +11,7 @@ import de.xam.featdoc.mermaid.sequence.MermaidDiagram;
 import de.xam.featdoc.mermaid.sequence.SequenceDiagram;
 import de.xam.featdoc.system.Message;
 import de.xam.featdoc.system.Feature;
+import de.xam.featdoc.system.ResultStep;
 import de.xam.featdoc.system.Rule;
 import de.xam.featdoc.system.Scenario;
 import de.xam.featdoc.system.System;
@@ -70,7 +71,7 @@ public class FeatDoc {
         lineWriter.writeLine("## Rules, not used in any scenario");
         Set<Rule> allRules = universe.systems().stream().flatMap(System::rules).collect(Collectors.toSet());
         Set<Rule> usedInScenarios =
-        universe.scenarios().stream().flatMap(scenario -> universe.computeResultingSteps(scenario).stream()).map(Universe.ResultStep::rule).collect(Collectors.toSet());
+        universe.scenarios().stream().flatMap(scenario -> universe.computeResultingSteps(scenario).stream()).map(ResultStep::rule).collect(Collectors.toSet());
         allRules.removeAll(usedInScenarios);
         allRules.forEach(rule -> lineWriter.writeLine("* Feature *%s* ([%s](%s)): No calls to trigger **%s**",
                 rule.feature().label(),
@@ -170,19 +171,19 @@ public class FeatDoc {
 
         lineWriter.writeSection(wikiContext.i18n(Term.scenarioSteps));
         legend(wikiContext,lineWriter);
-        List<Universe.ResultStep> resultingSteps = universe.computeResultingSteps(scenario);
+        List<ResultStep> resultingSteps = universe.computeResultingSteps(scenario);
         MarkdownTool.Table table = lineWriter.table()
                 .row("Nr", "From System","   ", "To System", "Message", "Comment", "Rule Definition")
                 .headerSeparator();
         int rowNr = 1;
-        for (Universe.ResultStep rs : resultingSteps) {
+        for (ResultStep rs : resultingSteps) {
             table.row(""+rowNr++,
                     wikiContext.wikiLink(rs.source()),
-                    rs.rulePart().message().isSynchronous() ? ARROW_LEFT_RIGHT_SOLID : ARROW_LEFT_RIGHT_DASHED,
+                    rs.message().isSynchronous() ? ARROW_LEFT_RIGHT_SOLID : ARROW_LEFT_RIGHT_DASHED,
                     wikiContext.wikiLink(rs.target()),
-                    rs.rulePart().message().name(),
-                    rs.rulePart().comment() == null ? "   ":
-                            "*"+rs.rulePart().comment()+"*",
+                    rs.message().name(),
+                    rs.messageComment() == null ? "   ":
+                            "*"+rs.messageComment()+"*",
                     rs.isScenario() ? "**" + wikiContext.i18n(Term.scenario) + "**" :
                             String.format("%s/%s", wikiContext.wikiLink(rs.feature().system()), rs.feature().label())
             );
@@ -191,11 +192,12 @@ public class FeatDoc {
         lineWriter.writeSection(wikiContext.i18n(Term.scenarioTree));
         legend(wikiContext,lineWriter);
         List<StringTree> trees = universe.toTrees(scenario, (rs) ->
-                String.format("%s %s %s: **%s** (%s)",
+                String.format("%s %s %s: **%s** %s [%s]",
                         wikiContext.wikiLink(rs.source()),
-                        rs.rulePart().message().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
+                        rs.message().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
                         wikiContext.wikiLink(rs.target()),
-                        rs.rulePart().message().name(),
+                        rs.message().name(),
+                        rs.messageComment() == null? "" : " - *"+rs.messageComment()+"*",
                         rs.feature() == null ? wikiContext.i18n(Term.scenario) : wikiContext.wikiLink(rs.feature().system()) + "/" + rs.feature().label()
         ));
         StringTree.toMarkdownList(trees,lineWriter);

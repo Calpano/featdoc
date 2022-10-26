@@ -1,4 +1,4 @@
 package de.xam.featdoc.system;
 
-public record ScenarioStep(Scenario scenario, System source, System target, Rule.RulePart rulePart) {
+public record ScenarioStep(Scenario scenario, System source, System target, Message outgoingMessage, String commentOnMessage) {
 }

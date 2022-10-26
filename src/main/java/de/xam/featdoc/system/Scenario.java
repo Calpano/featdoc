@@ -58,7 +58,7 @@ public class Scenario implements IWikiLink {
             log.warn("Message not defined in either source (" + source.label + ") or target (" + target.label + ") system: " + message);
         }
 
-        ScenarioStep scenarioStep = new ScenarioStep(this, source, target, new Rule.Trigger(message, comment));
+        ScenarioStep scenarioStep = new ScenarioStep(this, source, target, message, comment);
         scenarioSteps.add(scenarioStep);
         return this;
     }
