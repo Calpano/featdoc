@@ -37,7 +37,7 @@ public class Scenario implements IWikiLink {
     private static final Logger log = getLogger(Scenario.class);
 
     /**
-     * @param source sending system
+     * @param source  sending system
      * @param message to be sent
      * @param comment optional comment on this one particular trigger message (event)
      * @return Scenario for further extension
@@ -55,16 +55,6 @@ public class Scenario implements IWikiLink {
     public List<ScenarioStep> steps() {
         return Collections.unmodifiableList(scenarioSteps);
     }
-
-    /**
-     * Direct scenario systems, not indirectly called systems.
-     * Distinct and sorted.
-     */
-    public Stream<System> systems() {
-        return steps().stream().flatMap(scenarioStep -> Stream.of(scenarioStep.source(), scenarioStep.target())).distinct().sorted();
-    }
-
-
 
     @Override
     public @Nullable String wikiFolder(I18n i18n) {
