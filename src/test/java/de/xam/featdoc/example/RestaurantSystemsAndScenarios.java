@@ -104,7 +104,7 @@ public class RestaurantSystemsAndScenarios {
     public static void defineScenarios() {
         Systems.UNIVERSE.scenario("Lunch-Customer (in a hurry)") //
                 .step(CUSTOMER, WAITER, Waiter.orderEspresso)//
-                .step(CUSTOMER, WAITER, Waiter.customerWantsToPay, "Today no credit cards") //
+                .step(CUSTOMER, Waiter.customerWantsToPay, "Today no credit cards") //
         ;
     }
 

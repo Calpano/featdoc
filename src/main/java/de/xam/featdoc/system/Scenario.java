@@ -38,32 +38,19 @@ public class Scenario implements IWikiLink {
 
     /**
      * @param source sending system
-     * @param target receiving system
-     * @param message must either be defined within 'source' as outgoing OR in 'target' as incoming
+     * @param message to be sent
      * @param comment optional comment on this one particular trigger message (event)
      * @return Scenario for further extension
      */
-    public Scenario step(System source, System target, Message message, String comment) {
-        if (message.system().equals(source) && !message.equals(target)) {
-            if (message.direction() != Message.Direction.OUTGOING)
-                log.warn("Message defined in source System " + source + " must be OUTGOING, is " + message);
-        } else if (message.system().equals(target) && !message.system().equals(source)) {
-            if (message.direction() != Message.Direction.INCOMING)
-                log.warn("Message defined in target System " + source + " must be INCOMING, is " + message);
-        } else {
-            log.warn("Message not defined in either source (" + source.label + ") or target (" + target.label + ") system: " + message);
-        }
-
-        ScenarioStep scenarioStep = new ScenarioStep(this, source, target, message, comment);
+    public Scenario step(System source, Message message, String comment) {
+        ScenarioStep scenarioStep = new ScenarioStep(this, source, message, comment);
         scenarioSteps.add(scenarioStep);
         return this;
     }
 
-
     public Scenario step(System source, System target, Message message) {
-        return step(source, target, message, null);
+        return step(source, message, null);
     }
-
 
     public List<ScenarioStep> steps() {
         return Collections.unmodifiableList(scenarioSteps);
