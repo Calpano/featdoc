@@ -26,7 +26,7 @@ public class MarkdownTool {
 
         public Table row(String... args) {
             if(cols > 0 && cols!=args.length)
-                throw new IllegalArgumentException("Table rows must have some lenght");
+                throw new IllegalArgumentException("Table rows must have some length");
             lineWriter.writeLine("|" +
                 Stream.of(args)
                     .map(MarkdownTool::escapePipes)
