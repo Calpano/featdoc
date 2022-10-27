@@ -2,7 +2,7 @@ package de.xam.featdoc.system;
 
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
-import de.xam.featdoc.markdown.MarkdownTool;
+import de.xam.featdoc.Util;
 import de.xam.featdoc.markdown.StringTree;
 import de.xam.featdoc.mermaid.sequence.Arrow;
 import de.xam.featdoc.mermaid.sequence.SequenceDiagram;
@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static de.xam.featdoc.Util.add;
@@ -33,7 +34,7 @@ public class Universe {
     public List<ResultStep> computeResultingSteps(Scenario scenario) {
         List<ResultStep> resultingSteps = new ArrayList<>();
         for (ScenarioStep step : scenario.steps()) {
-            reactOn(step, resultingSteps::add);
+            reactOn(step, 0, step,  resultingSteps::add);
         }
         return resultingSteps;
     }
@@ -98,19 +99,40 @@ public class Universe {
         SequenceDiagram sequenceDiagram = new SequenceDiagram(scenario.label());
         // participants
         resultingSteps.stream()
-                .flatMap(rs -> Stream.of(rs.sourceSystem(), rs.targetSystem()))
+                .flatMap(rs -> Stream.of(rs.cause().system(), rs.effectSystem()))
                 .filter(Objects::nonNull)
                 .distinct()
                 .sorted()
                 .forEach(system -> sequenceDiagram.participant(system.id, system.label));
         // steps
         resultingSteps.forEach(step -> sequenceDiagram.step(
-                step.sourceSystem().id,
+                step.cause().system().id,
                 step.message().timing() == Timing.Synchronous ? Arrow.SolidWithHead : Arrow.DottedAsync,
-                // FIXME why can targetSytem be null in a resultingStep?
-                step.targetSystem()==null?null : step.targetSystem().id,
-                MarkdownTool.format(step.message().name() + (step.feature() == null ? "" : " [" + step.feature().label + "]"))));
+                (step.effect()==null? step.message().system() : step.effect().system()).id,
+                combinedMessage(step.cause(), step.effect())
+        ));
         return sequenceDiagram;
+    }
+
+    private String combinedMessage(Cause cause, @Nullable Effect effect) {
+        final Stream<String> lines;
+        if(effect==null) {
+            lines = Stream.of(
+                    cause.comment() == null ? null : ("'" + cause.comment() + "'"),
+                    cause.message().name(),
+                    cause.rule() == null ? null : "[" + cause.rule().feature().label + "]"
+            );
+        } else {
+            lines = Stream.of(
+                    cause.comment() == null ? null : ("'" + cause.comment() + "'"),
+                    cause.message().name(),
+                    Util.combineStrings(
+                            cause.rule() == null ? null : ("[" + cause.rule().feature().label + "]"),
+                            effect.rule() == null ? null : ("[" + effect.rule().feature().label + "]")),
+                    effect.comment() == null ? null : ("'" + effect.comment() + "'")
+            );
+        }
+        return lines.filter(Objects::nonNull).collect(Collectors.joining("<br/>"));
     }
 
     public List<StringTree> toTrees(Scenario scenario, Function<ResultStep, String> toMarkdown) {
@@ -140,69 +162,38 @@ public class Universe {
         return systems().stream().flatMap(System::rules);
     }
 
-    private void reactOn(ScenarioStep step, Consumer<ResultStep> resultConsumer) {
-        ResultStep initialStep = ResultStep.direct(step, 0, step.sourceSystem(), step.message(), step.commentOnMessage(),
-                step.message().isIncoming() ? step.message().system() : null);
-        reactOn(initialStep, resultConsumer);
-    }
 
     /**
      * Each {@link ResultStep} combines the information from a outgoing action/scenario with an incoming trigger.
      * @param input
      * @param resultConsumer
      */
-    private void reactOn(ResultStep input, Consumer<ResultStep> resultConsumer) {
+    private void reactOn(ScenarioStep scenarioStep, int depth, Cause cause, Consumer<ResultStep> resultConsumer) {
         AtomicBoolean isAnyRuleTriggered = new AtomicBoolean(false);
         rules().forEach(rule -> {
-            if(rule.trigger().isTriggeredBy(input.message())) {
+            if(rule.trigger().isTriggeredBy(cause.message())) {
                 isAnyRuleTriggered.set(true);
                 ResultStep inputAndTriggerStep = ResultStep.indirect(
-                        input.scenarioStep(),
-                        input.depth(),
-                        input.sourceSystem(),
-                        input.message(),
-                        combineComments(input.messageComment(),rule.trigger().comment()),
-                        rule.feature().system(),
-                        rule);
+                        scenarioStep,
+                        depth,
+                        cause,
+                        new RuleEffect(rule,rule.trigger())
+                );
                 resultConsumer.accept(inputAndTriggerStep);
                 for(Rule.Action action : rule.actions()) {
-                    ResultStep outputStep = ResultStep.indirect(
-                            input.scenarioStep(),
-                            input.depth()+1,
-                            rule.feature().system(),
-                            action.message(),
-                            action.comment(),
-                            // if we CALL another system, we know the targetSystem
-                            // if we emit an event, we don't know who listens
-                            action.message().isIncoming() ? action.message().system() : null,
-                            rule
-                    );
-                    reactOn(outputStep, resultConsumer);
+                    RuleEffect ruleEffect = new RuleEffect(rule, action);
+                    reactOn(scenarioStep, depth+1, ruleEffect, resultConsumer);
                 }
             }
         });
         if(!isAnyRuleTriggered.get()) {
-            if(input.targetSystem() == null) {
-                ResultStep outgoingEventToSelf = ResultStep.indirect(input.scenarioStep(), input.depth(),
-                        input.sourceSystem(),
-                        input.message(),input.messageComment(),
-                        input.message().system(),
-                        null);
-                resultConsumer.accept(outgoingEventToSelf);
-            } else {
-                resultConsumer.accept(input);
-            }
-        }
-    }
-
-    private static @Nullable String combineComments(@Nullable  String scenarioOrActionComment, @Nullable  String ruleTriggerComment) {
-        if (scenarioOrActionComment == null) {
-            if (ruleTriggerComment == null) return null;
-            else return String.format("Trigger: %s", ruleTriggerComment);
-        } else if (ruleTriggerComment == null) {
-            return null;
-        } else {
-            return String.format("%s / Trigger: %s", scenarioOrActionComment, ruleTriggerComment);
+            ResultStep outgoingEventToSelf = ResultStep.indirect(
+                    scenarioStep,
+                    depth,
+                    cause,
+                    null
+            );
+            resultConsumer.accept(outgoingEventToSelf);
         }
     }
 

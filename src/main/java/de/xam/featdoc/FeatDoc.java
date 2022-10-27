@@ -32,6 +32,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static de.xam.featdoc.Util.combineStrings;
+
 public class FeatDoc {
 
     record MarkdownWriter(IWikiContext wikiContext) {
@@ -71,7 +73,7 @@ public class FeatDoc {
         lineWriter.writeLine("## Rules, not used in any scenario");
         Set<Rule> allRules = universe.systems().stream().flatMap(System::rules).collect(Collectors.toSet());
         Set<Rule> usedInScenarios =
-        universe.scenarios().stream().flatMap(scenario -> universe.computeResultingSteps(scenario).stream()).map(ResultStep::rule).collect(Collectors.toSet());
+        universe.scenarios().stream().flatMap(scenario -> universe.computeResultingSteps(scenario).stream()).flatMap(ResultStep::rules).collect(Collectors.toSet());
         allRules.removeAll(usedInScenarios);
         allRules.forEach(rule -> lineWriter.writeLine("* Feature *%s* ([%s](%s)): No calls to trigger **%s**",
                 rule.feature().label(),
@@ -179,26 +181,25 @@ public class FeatDoc {
         int rowNr = 1;
         for (ResultStep rs : resultingSteps) {
             table.row(""+rowNr++,
-                    wikiContext.wikiLink(rs.sourceSystem()),
+                    wikiContext.wikiLink(rs.cause().system()),
                     rs.message().isSynchronous() ? ARROW_LEFT_RIGHT_SOLID : ARROW_LEFT_RIGHT_DASHED,
-                    wikiContext.wikiLink(rs.targetSystem()),
+                    rs.effect()==null?"*Outgoing*" : wikiContext.wikiLink(rs.effect().system()),
                     rs.message().name(),
-                    rs.messageComment() == null ? "   ":
-                            "*"+rs.messageComment()+"*",
+                    combineStrings(rs.cause().comment(), rs.effectComment()) == null ? "   " : ("*"+ combineStrings(rs.cause().comment(), rs.effectComment())+"*"),
                     ruleDefinition(rs, wikiContext)
             );
         }
 
         lineWriter.writeSection(wikiContext.i18n(Term.scenarioTree));
         legend(wikiContext,lineWriter);
-        List<StringTree> trees = universe.toTrees(scenario, (rs) ->
+        List<StringTree> trees = universe.toTrees(scenario, rs ->
                 String.format("%s %s %s: **%s** %s [%s]",
-                        wikiContext.wikiLink(rs.sourceSystem()),
+                        wikiContext.wikiLink(rs.cause().system()),
                         rs.message().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
-                        wikiContext.wikiLink(rs.targetSystem()),
+                        rs.effect()==null?"*Outgoing*" : wikiContext.wikiLink(rs.effect().system()),
                         rs.message().name(),
-                        rs.messageComment() == null? "" : " - *"+rs.messageComment()+"*",
-                        rs.feature() == null ? wikiContext.i18n(Term.scenario) : wikiContext.wikiLink(rs.feature().system()) + "/" + rs.feature().label()
+                        combineStrings(rs.cause().comment(), rs.effectComment()) == null ? "   " : ("*"+ combineStrings(rs.cause().comment(), rs.effectComment())+"*"),
+                        ruleDefinition(rs, wikiContext)
         ));
         StringTree.toMarkdownList(trees,lineWriter);
     }
@@ -206,10 +207,20 @@ public class FeatDoc {
     private static String ruleDefinition(ResultStep rs, IWikiContext wikiContext) {
         if (rs.isScenario()) {
             return String.format("**%s**", wikiContext.i18n(Term.scenario));
-        } else if (rs.isOutgoingMessageWithoutReceiver()) {
-            return "*Outgoing*";
+        }
+        assert rs.cause().rule() != null;
+        if(rs.effect()==null) {
+            return String.format("%s.%s",
+                    wikiContext.wikiLink(rs.cause().rule().feature().system()),
+                    rs.cause().rule().feature().label()
+            );
         } else {
-            return String.format("%s/%s", wikiContext.wikiLink(rs.feature().system()), rs.feature().label());
+            return String.format("%s.%s // %s.%s",
+                    wikiContext.wikiLink(rs.cause().rule().feature().system()),
+                    rs.cause().rule().feature().label(),
+                    wikiContext.wikiLink(rs.effect().rule().feature().system()),
+                    rs.effect().rule().feature().label()
+            );
         }
     }
 

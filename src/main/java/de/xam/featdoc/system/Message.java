@@ -2,6 +2,16 @@ package de.xam.featdoc.system;
 
 public record Message(System system, Direction direction, Timing timing, String name) {
 
+    public boolean equals( Object other) {
+        if(this ==other) return true;
+        if(other instanceof Message otherMessage) {
+            return this.system.equals(otherMessage.system)
+                    && this.name.equals(otherMessage.name)
+                    && this.direction.equals(otherMessage.direction);
+        } else
+            return false;
+    }
+
     /** Templates for messages, non-restricting */
     public enum Kind {
         API_CALL(Direction.INCOMING, Timing.Synchronous),
