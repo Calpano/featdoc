@@ -1,7 +1,7 @@
 package de.xam.featdoc.mermaid.flowchart;
 
-import de.xam.featdoc.mermaid.sequence.Arrow;
-import org.jetbrains.annotations.Nullable;
+
+import javax.annotation.Nullable;
 
 public record Edge(String source, Arrow arrow, @Nullable String label, String target) {
 

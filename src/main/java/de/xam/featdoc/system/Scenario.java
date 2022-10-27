@@ -4,9 +4,9 @@ import de.xam.featdoc.I18n;
 import de.xam.featdoc.Term;
 import de.xam.featdoc.markdown.MarkdownTool;
 import de.xam.featdoc.wiki.IWikiLink;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

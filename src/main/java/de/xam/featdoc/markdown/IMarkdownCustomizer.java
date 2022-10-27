@@ -1,7 +1,5 @@
 package de.xam.featdoc.markdown;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Optional;
 
 public interface IMarkdownCustomizer {

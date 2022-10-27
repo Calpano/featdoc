@@ -1,8 +1,8 @@
 package de.xam.featdoc.mermaid.flowchart;
 
 import de.xam.featdoc.LineWriter;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 
 public record Node(String id, Shape shape, @Nullable String label) implements INode {

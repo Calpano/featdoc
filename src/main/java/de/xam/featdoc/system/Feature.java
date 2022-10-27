@@ -1,10 +1,9 @@
 package de.xam.featdoc.system;
 
 import de.xam.featdoc.I18n;
-import de.xam.featdoc.Util;
 import de.xam.featdoc.wiki.IWikiLink;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

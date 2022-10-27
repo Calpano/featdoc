@@ -1,5 +1,7 @@
 package de.xam.featdoc.mermaid.sequence;
 
+import javax.annotation.Nullable;
+
 /**
  * @param from
  * @param arrow

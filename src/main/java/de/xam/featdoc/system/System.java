@@ -3,9 +3,9 @@ package de.xam.featdoc.system;
 import de.xam.featdoc.I18n;
 import de.xam.featdoc.Term;
 import de.xam.featdoc.wiki.IWikiLink;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -65,7 +65,7 @@ public class System implements IWikiLink, Comparable<System>, SystemApi {
 
 
     @Override
-    public int compareTo(@NotNull System o) {
+    public int compareTo(@Nonnull System o) {
         return comparator().compare(this, o);
     }
 
