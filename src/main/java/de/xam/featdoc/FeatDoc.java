@@ -173,6 +173,7 @@ public class FeatDoc {
         legend(wikiContext,lineWriter);
         List<ResultStep> resultingSteps = universe.computeResultingSteps(scenario);
         MarkdownTool.Table table = lineWriter.table()
+                // TODO i18n
                 .row("Nr", "From System","   ", "To System", "Message", "Comment", "Rule Definition")
                 .headerSeparator();
         int rowNr = 1;
@@ -184,8 +185,7 @@ public class FeatDoc {
                     rs.message().name(),
                     rs.messageComment() == null ? "   ":
                             "*"+rs.messageComment()+"*",
-                    rs.isScenario() ? "**" + wikiContext.i18n(Term.scenario) + "**" :
-                            String.format("%s/%s", wikiContext.wikiLink(rs.feature().system()), rs.feature().label())
+                    ruleDefinition(rs, wikiContext)
             );
         }
 
@@ -201,6 +201,16 @@ public class FeatDoc {
                         rs.feature() == null ? wikiContext.i18n(Term.scenario) : wikiContext.wikiLink(rs.feature().system()) + "/" + rs.feature().label()
         ));
         StringTree.toMarkdownList(trees,lineWriter);
+    }
+
+    private static String ruleDefinition(ResultStep rs, IWikiContext wikiContext) {
+        if (rs.isScenario()) {
+            return String.format("**%s**", wikiContext.i18n(Term.scenario));
+        } else if (rs.isOutgoingMessageWithoutReceiver()) {
+            return "*Outgoing*";
+        } else {
+            return String.format("%s/%s", wikiContext.wikiLink(rs.feature().system()), rs.feature().label());
+        }
     }
 
     private static void legend(IWikiContext wikiContext, LineWriter lineWriter) {

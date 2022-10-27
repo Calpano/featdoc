@@ -32,6 +32,10 @@ public record ResultStep(ScenarioStep scenarioStep, int depth, System sourceSyst
         return rule == null ? null : rule.feature();
     }
 
+    public boolean isOutgoingMessageWithoutReceiver() {
+        return message.isOutgoing() && (targetSystem == null || rule == null);
+    }
+
     public boolean isScenario() {
         return depth == 0;
     }
