@@ -111,7 +111,8 @@ public class Universe {
         resultingSteps.forEach(step -> sequenceDiagram.step(
                 step.sourceSystem().id,
                 step.message().timing() == Timing.Synchronous ? Arrow.SolidWithHead : Arrow.DottedAsync,
-                step.targetSystem().id,
+                // FIXME why can targetSytem be null in a resultingStep?
+                step.targetSystem()==null?null : step.targetSystem().id,
                 MarkdownTool.format(step.message().name() + (step.feature() == null ? "" : " [" + step.feature().label + "]"))));
         return sequenceDiagram;
     }
