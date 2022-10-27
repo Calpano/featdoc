@@ -17,12 +17,12 @@ public class RestaurantSystemsAndScenarios {
 
     interface Systems {
         Universe UNIVERSE = new Universe();
-        System CUSTOMER = UNIVERSE.system("customer", "Customer", "Customer");
-        System WAITER = UNIVERSE.system("waiter", "Waiter", "Waiter");
-        System CM = UNIVERSE.system("coffee", "Coffee Machine", "CoffeeMachine");
-        System MOC = UNIVERSE.system("moc", "Mobile Order Client", "Mobile");
-        System POS = UNIVERSE.system("pos", "Point of Sale System", "POS");
-        System ACC = UNIVERSE.system("accounting", "Accounting System", "Accounting");
+        System CUSTOMER = UNIVERSE.system("customer", "Customer", "Customer", 0);
+        System WAITER = UNIVERSE.system("waiter", "Waiter", "Waiter", 10);
+        System CM = UNIVERSE.system("coffee", "Coffee Machine", "CoffeeMachine", 20);
+        System MOC = UNIVERSE.system("moc", "Mobile Order Client", "Mobile", 15);
+        System POS = UNIVERSE.system("pos", "Point of Sale System", "POS", 30);
+        System ACC = UNIVERSE.system("accounting", "Accounting System", "Accounting", 40);
     }
 
     interface Customer {
@@ -90,7 +90,7 @@ public class RestaurantSystemsAndScenarios {
     interface AccountingSystem {
 
         Message calculateTax = ACC.apiCall("Calculate taxes");
-        Message reduceInventory = ACC.apiCall("Reduce inventory");
+        Message reduceInventory = ACC.asyncEventIncoming("Reduce inventory");
 
         static void define() {
             ACC.feature("Inventory")

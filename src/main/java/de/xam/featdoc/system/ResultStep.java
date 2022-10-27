@@ -12,7 +12,6 @@ import java.util.stream.Stream;
  */
 public record ResultStep(ScenarioStep scenarioStep, int depth, Cause cause, @Nullable Effect effect ) {
 
-
     public static ResultStep indirect(ScenarioStep scenarioStep, int depth, Cause cause, Effect effect) {
         return new ResultStep(scenarioStep, depth, cause, effect);
     }

@@ -16,7 +16,7 @@ public enum Term {
     overviewCallsFromSystems("Overview Of Calls From Other Systems", "Übersicht Aufrufe von Systemen"),
     rule("Rule","Regel"),
     scenario("Scenario", "Szenario"),
-    scenarioSteps("Scenario Steps","Szenario-Schritte" ),
+    scenarioSteps("Detailed Scenario Steps","Detaillierte Szenario-Schritte" ),
     scenarioTree("Scenario Tree","Szenario Baum" ),
     scenarios("Scenarios", "Szenarien"),
     sequenceDiagram("Sequence Diagram","Sequenz-Diagramm" ),

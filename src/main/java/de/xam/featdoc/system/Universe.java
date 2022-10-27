@@ -1,5 +1,6 @@
 package de.xam.featdoc.system;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
 import de.xam.featdoc.Util;
@@ -27,6 +28,45 @@ import static de.xam.featdoc.Util.add;
 
 public class Universe {
 
+    class Chain {
+        private final ScenarioStep scenarioStep;
+        private final Consumer<ResultStep> resultConsumer;
+
+        public Chain(ScenarioStep scenarioStep, Consumer<ResultStep> resultConsumer) {
+            this.scenarioStep = scenarioStep;
+            this.resultConsumer = resultConsumer;
+        }
+
+        public void react() {
+            reactOn(0, scenarioStep);
+        }
+
+        private void chain(int depth, Cause cause, Effect effect) {
+            resultConsumer.accept(ResultStep.indirect(scenarioStep, depth, cause, effect));
+        }
+
+        private void reactOn(int depth, Cause cause) {
+            AtomicBoolean isAnyRuleTriggered = new AtomicBoolean(false);
+            rules().forEach(rule -> {
+                if (rule.trigger().isTriggeredBy(cause.message())) {
+                    isAnyRuleTriggered.set(true);
+                    chain(depth, cause, new RuleEffect(rule, rule.trigger()));
+                    for (Rule.Action action : rule.actions()) {
+                        RuleEffect ruleEffect = new RuleEffect(rule, action);
+                        reactOn(depth + 1, ruleEffect);
+                    }
+                }
+            });
+            if (!isAnyRuleTriggered.get()) {
+                switch(cause.message().direction()) {
+                    case OUTGOING ->
+                        chain(depth,cause, null);
+                    case INCOMING ->
+                        chain(depth, cause, TerminalEffect.of(cause));
+                }
+            }
+        }
+    }
     private final List<Scenario> scenarios = new ArrayList<>();
     private final List<System> systems = new ArrayList<>();
     private final List<Condition> conditions = new ArrayList<>();
@@ -34,9 +74,14 @@ public class Universe {
     public List<ResultStep> computeResultingSteps(Scenario scenario) {
         List<ResultStep> resultingSteps = new ArrayList<>();
         for (ScenarioStep step : scenario.steps()) {
-            reactOn(step, 0, step,  resultingSteps::add);
+            Chain chain = new Chain(step, resultingSteps::add);
+            chain.react();
         }
         return resultingSteps;
+    }
+
+    public Stream<Feature> features() {
+        return systems().stream().flatMap(system -> system.featureList.stream());
     }
 
     public Stream<Feature> featuresProducing(Message message) {
@@ -106,38 +151,21 @@ public class Universe {
                 .forEach(system -> sequenceDiagram.participant(system.id, system.label));
         // steps
         resultingSteps.forEach(step -> sequenceDiagram.step(
+                // from
                 step.cause().system().id,
+                // arrow
                 step.message().timing() == Timing.Synchronous ? Arrow.SolidWithHead : Arrow.DottedAsync,
-                (step.effect()==null? step.message().system() : step.effect().system()).id,
-                combinedMessage(step.cause(), step.effect())
+                // to
+                (step.effect() == null ? step.message().system() : step.effect().system()).id,
+                // message on the line
+                combinedMessageOnSeqenceDiagram(step.cause(), step.effect())
         ));
         return sequenceDiagram;
     }
 
-    private String combinedMessage(Cause cause, @Nullable Effect effect) {
-        final Stream<String> lines;
-        if(effect==null) {
-            lines = Stream.of(
-                    cause.comment() == null ? null : ("'" + cause.comment() + "'"),
-                    cause.message().name(),
-                    cause.rule() == null ? null : "[" + cause.rule().feature().label + "]"
-            );
-        } else {
-            lines = Stream.of(
-                    cause.comment() == null ? null : ("'" + cause.comment() + "'"),
-                    cause.message().name(),
-                    Util.combineStrings(
-                            cause.rule() == null ? null : ("[" + cause.rule().feature().label + "]"),
-                            effect.rule() == null ? null : ("[" + effect.rule().feature().label + "]")),
-                    effect.comment() == null ? null : ("'" + effect.comment() + "'")
-            );
-        }
-        return lines.filter(Objects::nonNull).collect(Collectors.joining("<br/>"));
-    }
-
     public List<StringTree> toTrees(Scenario scenario, Function<ResultStep, String> toMarkdown) {
         Deque<StringTree> stack = new LinkedList<>();
-        StringTree root = new StringTree("ROOT Szenario: " + scenario.label());
+        StringTree root = new StringTree("ROOT Scenario: " + scenario.label());
         stack.add(root);
         List<ResultStep> resultingSteps = computeResultingSteps(scenario);
         int depth = 0;
@@ -158,58 +186,54 @@ public class Universe {
         return trees;
     }
 
-    private Stream<Rule> rules() {
-        return systems().stream().flatMap(System::rules);
-    }
-
-
     /**
-     * Each {@link ResultStep} combines the information from a outgoing action/scenario with an incoming trigger.
-     * @param input
-     * @param resultConsumer
-     */
-    private void reactOn(ScenarioStep scenarioStep, int depth, Cause cause, Consumer<ResultStep> resultConsumer) {
-        AtomicBoolean isAnyRuleTriggered = new AtomicBoolean(false);
-        rules().forEach(rule -> {
-            if(rule.trigger().isTriggeredBy(cause.message())) {
-                isAnyRuleTriggered.set(true);
-                ResultStep inputAndTriggerStep = ResultStep.indirect(
-                        scenarioStep,
-                        depth,
-                        cause,
-                        new RuleEffect(rule,rule.trigger())
-                );
-                resultConsumer.accept(inputAndTriggerStep);
-                for(Rule.Action action : rule.actions()) {
-                    RuleEffect ruleEffect = new RuleEffect(rule, action);
-                    reactOn(scenarioStep, depth+1, ruleEffect, resultConsumer);
-                }
-            }
-        });
-        if(!isAnyRuleTriggered.get()) {
-            ResultStep outgoingEventToSelf = ResultStep.indirect(
-                    scenarioStep,
-                    depth,
-                    cause,
-                    null
-            );
-            resultConsumer.accept(outgoingEventToSelf);
-        }
-    }
-
-    public Stream<Feature> features() {
-        return systems().stream().flatMap(system -> system.featureList.stream());
-    }
-
-    /**
-     * @throws  IllegalStateException if anything is invalid
+     * @throws IllegalStateException if anything is invalid
      */
     public void validate() {
         features().forEach(feature -> {
-            if(feature.hasUnfinishedRules()) {
+            if (feature.hasUnfinishedRules()) {
                 throw new IllegalStateException(String.format("System '%s' in feature '%s' has an unfinished rule. Likely you forgot to call 'build()'.", feature.system().label, feature.label));
             }
         });
+    }
+
+    public static String commentInMermaidLineLabel( @Nullable String comment) {
+        return comment == null ? null : ("(" + comment + ")");
+    }
+
+    /**
+     * Skip nulls
+     * @param joiner
+     * @param parts
+     * @return
+     */
+    public static String join( String joiner,  String ... parts ) {
+        return Joiner.on(joiner).skipNulls().join(parts);
+    }
+
+    private String combinedMessageOnSeqenceDiagram(Cause cause, @Nullable Effect effect) {
+        final String[] lines;
+        if (effect == null) {
+            lines = new String[] {
+                    commentInMermaidLineLabel(cause.comment())
+                    , cause.message().name()
+//                    ,cause.rule() == null ? null : "[" + cause.rule().feature().label + "]"
+            };
+        } else {
+            lines = new String[]{
+                    commentInMermaidLineLabel(cause.comment())
+                    , cause.message().name()
+//                    ,Util.combineStrings(
+//                            cause.rule() == null ? null : ("[" + cause.rule().feature().label + "]"),
+//                            effect.rule() == null ? null : ("[" + effect.rule().feature().label + "]"))
+                    , commentInMermaidLineLabel(effect.comment())
+            };
+        }
+        return join("<br/>", lines);
+    }
+
+    private Stream<Rule> rules() {
+        return systems().stream().flatMap(System::rules);
     }
 
 }
