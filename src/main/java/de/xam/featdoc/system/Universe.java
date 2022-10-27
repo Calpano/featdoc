@@ -6,8 +6,8 @@ import de.xam.featdoc.markdown.MarkdownTool;
 import de.xam.featdoc.markdown.StringTree;
 import de.xam.featdoc.mermaid.sequence.Arrow;
 import de.xam.featdoc.mermaid.sequence.SequenceDiagram;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,10 +36,6 @@ public class Universe {
             reactOn(step, resultingSteps::add);
         }
         return resultingSteps;
-    }
-
-    public Condition condition(String label) {
-        return add(conditions, new Condition(label));
     }
 
     public Stream<Feature> featuresProducing(Message message) {
@@ -186,7 +182,16 @@ public class Universe {
             }
         });
         if(!isAnyRuleTriggered.get()) {
-            resultConsumer.accept(input);
+            if(input.targetSystem() == null) {
+                ResultStep outgoingEventToSelf = ResultStep.indirect(input.scenarioStep(), input.depth(),
+                        input.sourceSystem(),
+                        input.message(),input.messageComment(),
+                        input.message().system(),
+                        null);
+                resultConsumer.accept(outgoingEventToSelf);
+            } else {
+                resultConsumer.accept(input);
+            }
         }
     }
 
