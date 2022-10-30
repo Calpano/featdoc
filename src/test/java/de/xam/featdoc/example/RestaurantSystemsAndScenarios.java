@@ -15,7 +15,7 @@ import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.WAITE
 
 public class RestaurantSystemsAndScenarios {
 
-    interface Systems {
+    public interface Systems {
         Universe UNIVERSE = new Universe();
         System CUSTOMER = UNIVERSE.system("customer", "Customer", "Customer", 0);
         System WAITER = UNIVERSE.system("waiter", "Waiter", "Waiter", 10);
@@ -99,11 +99,16 @@ public class RestaurantSystemsAndScenarios {
         }
     }
 
+    public static void define() {
+        defineSystems();
+        defineScenarios();
+    }
+
     /**
      *
      */
     public static void defineScenarios() {
-        Systems.UNIVERSE.scenario("Lunch-Customer (in a hurry)")
+        UNIVERSE.scenario("Lunch-Customer (in a hurry)")
                 .step(CUSTOMER, Waiter.orderEspresso)
                 .step(CUSTOMER, Waiter.customerWantsToPay, "Today no credit cards");
     }

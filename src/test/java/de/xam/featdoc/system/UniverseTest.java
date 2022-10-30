@@ -1,10 +1,19 @@
 package de.xam.featdoc.system;
 
+import de.xam.featdoc.CausalTree;
+import de.xam.featdoc.example.RestaurantSystemsAndScenarios;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.UNIVERSE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.slf4j.LoggerFactory.getLogger;
 
 class UniverseTest {
@@ -48,6 +57,12 @@ class UniverseTest {
     /** check rules:  ? --A.message--> A --B.message--> ? */
     @Test
     void testForeignSystem() {
+        Scenario scenario = createForeignSystemScenario();
+        List<ResultStep> resultingSteps = universe.computeResultingSteps(scenario);
+        dump("ForeignSystem",resultingSteps);
+    }
+
+    public Scenario createForeignSystemScenario() {
         systemB.feature("foreignSystem")
                 .rule(systemB_call,"c1").action( systemB_event,"c2").build();
         systemSink.feature("sink")
@@ -55,9 +70,9 @@ class UniverseTest {
         universe.validate();
         Scenario scenario = universe.scenario("test")
                 .step(systemA, systemB_call, "c0");
-        List<ResultStep> resultingSteps = universe.computeResultingSteps(scenario);
-        dump("ForeignSystem",resultingSteps);
+        return scenario;
     }
+
     /** Check rules:  B --B.message--> A --C.message--> C */
     @Test
     void testBridge() {
@@ -78,6 +93,47 @@ class UniverseTest {
             b.append(s+"   "+rs+"\n");
         }
         log.info("\n"+b.toString());
+    }
+
+    @Test
+    void causalTreeCoffee() {
+        RestaurantSystemsAndScenarios.define();
+        Scenario scenario = UNIVERSE.scenarios().get(0);
+        List<CausalTree> trees = Universe.toCausalTrees(scenario);
+        trees.forEach(CausalTree::dump);
+    }
+
+    @Test
+    void causalTree() {
+        ExampleUniverse.define();
+        Scenario scenario = ExampleUniverse.scenario;
+        List<CausalTree> trees = Universe.toCausalTrees(scenario);
+        trees.forEach(CausalTree::dump);
+    }
+
+    static {
+        ExampleUniverse.define();
+    }
+
+    @Test
+    void resultingAction()  {
+        List<Rule.Action> actionList = new ArrayList<>();
+        ExampleUniverse.universe.forEachResultingAction(ExampleUniverse.scenario.steps().get(0).message(), (rule, action)->{
+            actionList.add(action);
+        },true);
+        log.info("Res:\n"+actionList.stream().map(action -> action.message().name()).collect(Collectors.joining("\n,")));
+        assertActions(actionList, "bCall1", "cCall", "bCall2", "aEventOut", "cCall", "dEventOut");
+    }
+
+    private void assertActions(List<Rule.Action> actual, String ... expected) {
+        List<String> actualList = actual.stream().map(action -> action.message().name()).collect(Collectors.toList());
+        List<String> expectedList = Arrays.asList(expected);
+        Assertions.assertIterableEquals(expectedList,actualList );
+    }
+
+    @Test
+    void generateExample() throws IOException {
+        GenerateExampleDocumentation.generateFiles(ExampleUniverse.universe);
     }
 
 }
