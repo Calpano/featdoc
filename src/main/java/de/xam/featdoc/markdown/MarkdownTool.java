@@ -42,6 +42,8 @@ public class MarkdownTool {
     }
 
     public static String escapePipes(String s) {
+        if(s==null)
+            return null;
         return s.replace("|", "\\|");
     }
 
