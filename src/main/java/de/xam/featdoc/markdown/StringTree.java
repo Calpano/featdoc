@@ -135,9 +135,9 @@ public class StringTree implements Comparable<StringTree> {
     }
 
     private void dump(final String indent) {
-        System.out.println(indent + this.label + " hash=" + hashCode());
+        System.out.println(indent + this.label);
         for (final StringTree child : this.children) {
-            child.dump(indent + "--");
+            child.dump(indent + "@---");
         }
     }
 
