@@ -6,7 +6,7 @@ public record TerminalEffect(@Nullable Rule rule, Message message, @Nullable Str
                              System system) implements Effect {
 
     public static TerminalEffect of(Cause cause) {
-        return new TerminalEffect(cause.rule(), cause.message(), cause.comment(), cause.message().system());
+        return new TerminalEffect(cause.rule(), cause.message(), null, cause.message().system());
     }
 
 }

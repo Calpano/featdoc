@@ -202,6 +202,9 @@ public class FeatDoc {
         if (rs.effect() == null) {
             return null;
         }
+        if(rs.effect().rule()==null) {
+            return "--";
+        }
         return String.format("%s.%s",
                 wikiContext.wikiLink(rs.effect().rule().feature().system()),
                 rs.effect().rule().feature().label()

@@ -71,7 +71,7 @@ class UniverseTest {
 
     @Test
     void generateExample() throws IOException {
-        GenerateExampleDocumentation.generateFiles(ExampleUniverse.universe);
+        GenerateExampleDocumentation.generateFiles(ExampleUniverse.universe,"FeatDocExample");
     }
 
     @Test

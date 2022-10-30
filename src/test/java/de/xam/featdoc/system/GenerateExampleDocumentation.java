@@ -14,8 +14,8 @@ import static de.xam.featdoc.example.RestaurantSystemsAndScenarios.Systems.UNIVE
 
 public class GenerateExampleDocumentation {
 
-  public static void generateFiles(Universe universe) throws IOException {
-    final File localDir = new File("./target/FeatDocExample");
+  public static void generateFiles(Universe universe, String targetDir) throws IOException {
+    final File localDir = new File("./target/"+targetDir);
     localDir.mkdirs();
     FeatDoc.generateMarkdownFiles(universe, new IWikiContext() {
 

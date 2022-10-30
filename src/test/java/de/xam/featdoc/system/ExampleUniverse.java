@@ -14,6 +14,7 @@ interface ExampleUniverse {
     System c = universe.system("c", "c", "c");
     System d = universe.system("d", "d", "d");
     System e = universe.system("e", "e", "e");
+    System f = universe.system("f", "f", "f");
     Message aCall = a.apiCall("aCall");
     Message aEventOut = a.asyncEventOutgoing("aEventOut");
     Message bCall1 = b.apiCall("bCall1");
@@ -21,9 +22,12 @@ interface ExampleUniverse {
     Message cCall = c.apiCall("cCall");
     Message dEventOut = d.asyncEventOutgoing("dEventOut");
     Message eEventOut = e.asyncEventOutgoing("eEventOut");
+    Message fCall = f.apiCall("fCall");
 
     Scenario scenario = universe.scenario("Sceario-1")
-            .step(source, aCall, "source-to-a-Comment");
+            .step(source, aCall, "source-to-a-Comment")
+            .step(source, fCall,"source-calls-f-nothing-happens")
+    ;
 
     static void define() {
         a.feature("af")
