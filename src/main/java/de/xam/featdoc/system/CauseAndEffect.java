@@ -7,6 +7,10 @@ public interface CauseAndEffect {
     @Nullable
     String comment();
 
+    default boolean hasComment() {
+        return comment()!=null;
+    }
+
     Message message();
 
     @Nullable Rule rule();

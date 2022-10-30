@@ -9,15 +9,20 @@ import de.xam.featdoc.mermaid.MermaidTool;
 import de.xam.featdoc.mermaid.flowchart.FlowchartDiagram;
 import de.xam.featdoc.mermaid.sequence.MermaidDiagram;
 import de.xam.featdoc.mermaid.sequence.SequenceDiagram;
+import de.xam.featdoc.system.Cause;
+import de.xam.featdoc.system.CauseAndEffect;
+import de.xam.featdoc.system.Effect;
 import de.xam.featdoc.system.Feature;
 import de.xam.featdoc.system.Message;
 import de.xam.featdoc.system.ResultStep;
 import de.xam.featdoc.system.Rule;
 import de.xam.featdoc.system.Scenario;
 import de.xam.featdoc.system.System;
+import de.xam.featdoc.system.Timing;
 import de.xam.featdoc.system.Universe;
 import de.xam.featdoc.wiki.IWikiContext;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -208,7 +213,7 @@ public class FeatDoc {
             return String.format("**%s**", wikiContext.i18n(Term.scenario));
         }
         assert rs.cause().rule() != null;
-        if (rs.effect() == null || rs.cause().message().equals(rs.effect().message())) {
+        if (rs.effect() == null || (rs.cause().rule()!= null && rs.cause().rule().equals(rs.effect().rule()))) {
             return String.format("%s.%s",
                     wikiContext.wikiLink(rs.cause().rule().feature().system()),
                     rs.cause().rule().feature().label()
@@ -227,6 +232,14 @@ public class FeatDoc {
         SequenceDiagram sequenceDiagram = universe.toSequence(scenario);
         lineWriter.writeSection1("%s: %s", wikiContext.i18n(Term.scenario), sequenceDiagram.title());
         lineWriter.writeToc();
+
+        lineWriter.writeSection(wikiContext.i18n(Term.scenarioTree));
+        legend(wikiContext, lineWriter);
+        List<CausalTree> causalTrees = universe.toCausalTrees(scenario);
+        for(CausalTree causalTree : causalTrees) {
+            StringTree stringTree = toStringTree(causalTree, wikiContext);
+            stringTree.toMarkdownList(lineWriter);
+        }
 
         lineWriter.writeSection(wikiContext.i18n(Term.sequenceDiagram));
         mermaidDiagramBlock(sequenceDiagram, wikiContext.markdownCustomizer(), lineWriter);
@@ -271,18 +284,129 @@ public class FeatDoc {
             );
         }
 
-        lineWriter.writeSection(wikiContext.i18n(Term.scenarioTree));
-        legend(wikiContext, lineWriter);
-        List<StringTree> trees = universe.toTrees(scenario, rs ->
-                String.format("%s %s %s: **%s** %s [%s]",
-                        wikiContext.wikiLink(rs.cause().system()),
-                        rs.message().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
-                        rs.effect() == null ? "*Outgoing*" : wikiContext.wikiLink(rs.effect().system()),
-                        rs.message().name(),
-                        combineStrings(rs.cause().comment(), rs.effectComment()) == null ? "   " : ("*" + combineStrings(rs.cause().comment(), rs.effectComment()) + "*"),
-                        ruleDefinition(rs, wikiContext)
-                ));
-        StringTree.toMarkdownList(trees, lineWriter);
+//        lineWriter.writeSection(wikiContext.i18n(Term.scenarioTree));
+//        legend(wikiContext, lineWriter);
+//        List<StringTree> trees = universe.toTrees(scenario, rs ->
+//                String.format("%s %s %s: **%s** %s [%s]",
+//                        wikiContext.wikiLink(rs.cause().system()),
+//                        rs.message().isAsynchronous() ? ARROW_LEFT_RIGHT_DASHED : ARROW_LEFT_RIGHT_SOLID,
+//                        rs.effect() == null ? "*Outgoing*" : wikiContext.wikiLink(rs.effect().system()),
+//                        rs.message().name(),
+//                        combineStrings(rs.cause().comment(), rs.effectComment()) == null ? "   " : ("*" + combineStrings(rs.cause().comment(), rs.effectComment()) + "*"),
+//                        ruleDefinition(rs, wikiContext)
+//                ));
+//        StringTree.toMarkdownList(trees, lineWriter);
+
+    }
+
+    /**
+     * OUTGOING from source, multiple consumers
+     * <pre>
+     * Source: cause.msg-com ARROW
+     *    o target triggerCom
+     *    | action.msg-com ARROW
+     *        o nestedTarget
+     *    o target
+     *    | ARROW msg-com
+     *        o nestedTarget
+     * </pre>>
+     *
+     * OUTGOING from source, one consumer
+     * <pre>
+     * Source: msg-com ARROW target
+     *  | RECURSE
+     *  </pre>
+     *
+     * INCOMING at target
+     * <pre>
+     * source ARROW msg-com @ target
+     *  | RECURSE
+     *  </pre>
+     * @param causalTree
+     * @param wikiContext
+     * @return
+     */
+    private static StringTree toStringTree(CausalTree causalTree, IWikiContext wikiContext) {
+        StringTree stringTree = new StringTree("CausalTree");
+        addCause(null, causalTree, stringTree, wikiContext);
+        return stringTree.getChildNodesIterator().next();
+    }
+
+    private static String comment(CauseAndEffect causeAndEffect) {
+        return causeAndEffect.hasComment()?" "+italic(causeAndEffect.comment())+" ":"";
+    }
+
+    private static final String SPACE ="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+
+    private static void addCause(@Nullable Effect lastEffect, CausalTree causalTree, StringTree stringTree, IWikiContext wikiContext) {
+        Cause cause = (Cause) causalTree.getCauseAndEffect();
+        final String causeStr;
+        if(cause.message().isOutgoing()) {
+            causeStr = String.format("%s: %s %s %s ... "+debug("1"),
+                    (lastEffect!=null&&lastEffect.message().isOutgoing()?"... ":"")+ wikiContext.wikiLink(cause.system()),
+                    bold(cause.message().name()),
+                    comment(cause),
+                    arrow(cause.message().timing())
+            );
+        } else {
+            causeStr = String.format("%s%s%s%s: %s "+debug("2"),
+                    (lastEffect!=null&&lastEffect.message().isOutgoing()?"... ":"")+ wikiContext.wikiLink(cause.system()),
+                    comment(cause),
+                    arrow(cause.message().timing()),
+                    wikiContext.wikiLink( cause.message().system()),
+                    bold(cause.message().name())
+            );
+        }
+        // RECURSE
+        StringTree child = stringTree.addChild(causeStr);
+        causalTree.getChildNodesIterator().forEachRemaining(effect -> {
+            addEffect(cause, effect, child, wikiContext);
+        });
+    }
+
+    private static final boolean DEBUG = false;
+    public static String debug( String s ) {
+        return DEBUG ? SPACE+"["+s+"]": "";
+    }
+
+    private static void addEffect(Cause cause, CausalTree causalTree, StringTree stringTree, IWikiContext wikiContext) {
+        Effect effect = (Effect) causalTree.getCauseAndEffect();
+        final String effectStr;
+        if(effect.message().isOutgoing()) {
+            effectStr = String.format("%s%s %s %s ... "+debug("3"),
+                    (cause!=null&&cause.message().isOutgoing()?"... ":"")+ wikiContext.wikiLink(effect.system()),
+                    bold(effect.message().name()),
+                    comment(effect),
+                    arrow(effect.message().timing())
+            );
+        } else {
+            effectStr = String.format("%s%s%s%s: %s "+debug("4"),
+                    (cause!=null&&cause.message().isOutgoing()?"... ":"")+ wikiContext.wikiLink(effect.system()),
+                    comment(effect),
+                    arrow(effect.message().timing()),
+                    wikiContext.wikiLink( effect.message().system()),
+                    bold(effect.message().name())
+            );
+        }
+        // RECURSE
+        StringTree child = stringTree.addChild(effectStr);
+        causalTree.getChildNodesIterator().forEachRemaining(effect2 -> {
+            addCause(effect, effect2,child,wikiContext);
+        });
+    }
+
+    private static String bold(String s) {
+        return "**"+s+"**";
+    }
+    private static String italic(String s) {
+        return "*"+s+"*";
+    }
+
+    private static String arrow(Timing timing) {
+        return " " + switch (timing) {
+            case Synchronous -> ARROW_LEFT_RIGHT_SOLID;
+            case Asynchronous -> ARROW_LEFT_RIGHT_DASHED;
+        }+" ";
     }
 
     public static void systemPage(Universe universe, System system, IWikiContext wikiContext, LineWriter lineWriter) {

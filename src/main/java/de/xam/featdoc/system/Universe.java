@@ -3,7 +3,7 @@ package de.xam.featdoc.system;
 import com.google.common.base.Joiner;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
-import de.xam.featdoc.Util;
+import de.xam.featdoc.CausalTree;
 import de.xam.featdoc.markdown.StringTree;
 import de.xam.featdoc.mermaid.sequence.Arrow;
 import de.xam.featdoc.mermaid.sequence.SequenceDiagram;
@@ -58,18 +58,38 @@ public class Universe {
                 }
             });
             if (!isAnyRuleTriggered.get()) {
-                switch(cause.message().direction()) {
-                    case OUTGOING ->
-                        chain(depth,cause, null);
-                    case INCOMING ->
-                        chain(depth, cause, TerminalEffect.of(cause));
+                switch (cause.message().direction()) {
+                    case OUTGOING -> chain(depth, cause, null);
+                    case INCOMING -> chain(depth, cause, TerminalEffect.of(cause));
                 }
             }
         }
     }
+
     private final List<Scenario> scenarios = new ArrayList<>();
     private final List<System> systems = new ArrayList<>();
     private final List<Condition> conditions = new ArrayList<>();
+
+    public static String commentInMermaidLineLabel(@Nullable String comment) {
+        return comment == null ? null : ("(" + comment + ")");
+    }
+
+    /**
+     * Skip nulls
+     */
+    public static String join(String joiner, String... parts) {
+        return Joiner.on(joiner).skipNulls().join(parts);
+    }
+
+    public static CausalTree toCausalTree(ScenarioStep scenarioStep) {
+        CausalTree causalTree = CausalTree.create(scenarioStep);
+        scenarioStep.scenario().universe().toCausalTree(scenarioStep, causalTree);
+        return causalTree;
+    }
+
+    public static List<CausalTree> toCausalTrees(Scenario scenario) {
+        return scenario.steps().stream().map(Universe::toCausalTree).collect(Collectors.toList());
+    }
 
     public List<ResultStep> computeResultingSteps(Scenario scenario) {
         List<ResultStep> resultingSteps = new ArrayList<>();
@@ -92,6 +112,19 @@ public class Universe {
         scenarios().stream().flatMap(scenario -> scenario.steps().stream()).forEach(scenarioStep -> source_target.accept(scenarioStep.sourceSystem(), scenarioStep.message().system()));
 
         systems().stream().flatMap(System::rules).forEach(rule -> rule.actions().forEach(target -> source_target.accept(rule.trigger().message().system(), target.message().system())));
+    }
+
+    public void forEachResultingAction(Message message, BiConsumer<Rule, Rule.Action> rule_action, boolean transitive) {
+        rules().filter(rule -> rule.trigger().isTriggeredBy(message))
+                .forEach(rule -> {
+                    rule.actions().forEach(action -> {
+                        rule_action.accept(rule, action);
+                        if (transitive) {
+                            //RECURSE
+                            forEachResultingAction(action.message(), rule_action, transitive);
+                        }
+                    });
+                });
     }
 
     public Scenario scenario(String title) {
@@ -197,24 +230,10 @@ public class Universe {
         });
     }
 
-    public static String commentInMermaidLineLabel( @Nullable String comment) {
-        return comment == null ? null : ("(" + comment + ")");
-    }
-
-    /**
-     * Skip nulls
-     * @param joiner
-     * @param parts
-     * @return
-     */
-    public static String join( String joiner,  String ... parts ) {
-        return Joiner.on(joiner).skipNulls().join(parts);
-    }
-
     private String combinedMessageOnSeqenceDiagram(Cause cause, @Nullable Effect effect) {
         final String[] lines;
         if (effect == null) {
-            lines = new String[] {
+            lines = new String[]{
                     commentInMermaidLineLabel(cause.comment())
                     , cause.message().name()
 //                    ,cause.rule() == null ? null : "[" + cause.rule().feature().label + "]"
@@ -234,6 +253,25 @@ public class Universe {
 
     private Stream<Rule> rules() {
         return systems().stream().flatMap(System::rules);
+    }
+
+    /**
+     * One cause triggers
+     * <p>
+     * n systems > m features > k rules > l actions
+     * <pre>
+     * cause =>
+     *   system.feature: action
+     * </pre>
+     *
+     * @param cause
+     * @param causalTree
+     */
+    private void toCausalTree(Cause cause, CausalTree causalTree) {
+        forEachResultingAction(cause.message(), (rule, action) -> {
+            CausalTree causalChild = causalTree.addEffect(new RuleEffect(rule, action));
+            toCausalTree(new RuleCause(rule,action), causalChild);
+        },false);
     }
 
 }

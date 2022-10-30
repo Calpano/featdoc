@@ -14,6 +14,11 @@ import java.util.List;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class Scenario implements IWikiLink {
+    @Override
+    public String toString() {
+        return "Scenario{" + "'" + label + "' " + scenarioSteps.size() + "}";
+    }
+
     private final String label;
     private final List<ScenarioStep> scenarioSteps = new ArrayList<>();
     private final Universe universe;
@@ -57,6 +62,10 @@ public class Scenario implements IWikiLink {
 
     public List<ScenarioStep> steps() {
         return Collections.unmodifiableList(scenarioSteps);
+    }
+
+    public Universe universe() {
+        return universe;
     }
 
     @Override
