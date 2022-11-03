@@ -39,7 +39,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static de.xam.featdoc.Util.combineStrings;
 import static de.xam.featdoc.system.Universe.join;
 
 public class FeatDoc {
@@ -73,9 +72,9 @@ public class FeatDoc {
         lineWriter.writeLine("# Debug Infos");
 
         lineWriter.writeLine("## Events, not used in any rules");
-        Set<Message> allMessages = universe.systems().stream().flatMap(system -> system.events().stream()).collect(Collectors.toSet());
+        Set<Message> allMessages = universe.systemsList().stream().flatMap(system -> system.events().stream()).collect(Collectors.toSet());
         Set<Message> usedInRules = new HashSet<>();
-        universe.systems().stream().flatMap(System::rules).forEach(rule -> {
+        universe.systemsList().stream().flatMap(System::rules).forEach(rule -> {
             usedInRules.add(rule.trigger().message());
             usedInRules.addAll(rule.actions().stream().map(Rule.Action::message).collect(Collectors.toSet()));
         });
@@ -86,9 +85,9 @@ public class FeatDoc {
                 message.system().wikiLink(wikiContext.i18n())));
 
         lineWriter.writeLine("## Rules, not used in any scenario");
-        Set<Rule> allRules = universe.systems().stream().flatMap(System::rules).collect(Collectors.toSet());
+        Set<Rule> allRules = universe.systemsList().stream().flatMap(System::rules).collect(Collectors.toSet());
         Set<Rule> usedInScenarios =
-                universe.scenarios().stream().flatMap(scenario -> universe.computeResultingSteps(scenario).stream()).flatMap(ResultStep::rules).collect(Collectors.toSet());
+                universe.scenariosList().stream().flatMap(scenario -> universe.computeResultingSteps(scenario).stream()).flatMap(ResultStep::rules).collect(Collectors.toSet());
         allRules.removeAll(usedInScenarios);
         allRules.forEach(rule -> lineWriter.writeLine("* Feature *%s* ([%s](%s)): No calls to trigger **%s**",
                 rule.feature().label(),
@@ -130,11 +129,11 @@ public class FeatDoc {
 
     public static void generateMarkdownFiles(Universe universe, IWikiContext wikiContext) throws IOException {
         MarkdownWriter markdownWriter = new MarkdownWriter(wikiContext);
-        for (Scenario scenario : universe.scenarios()) {
+        for (Scenario scenario : universe.scenariosList()) {
             markdownWriter.write(wikiContext.markdownFile(scenario), lineWriter -> scenarioPage(universe, scenario, wikiContext, lineWriter), footer(wikiContext.i18n()));
         }
         // markdown files for each system, with features, rules, events
-        for (System system : universe.systems()) {
+        for (System system : universe.systemsList()) {
             markdownWriter.write(wikiContext.markdownFile(system), lineWriter -> systemPage(universe, system, wikiContext, lineWriter), footer(wikiContext.i18n()));
         }
         // markdown index file
@@ -147,11 +146,11 @@ public class FeatDoc {
     private static void indexPage(Universe universe, IWikiContext wikiContext, LineWriter lineWriter) {
         lineWriter.writeToc();
         lineWriter.writeSection1(wikiContext.i18n(Term.scenarios));
-        for (Scenario scenario : universe.scenarios()) {
+        for (Scenario scenario : universe.scenariosList()) {
             lineWriter.writeLine("* %s", wikiContext.wikiLink(scenario));
         }
         lineWriter.writeSection1(wikiContext.i18n(Term.systems));
-        for (System system : universe.systems()) {
+        for (System system : universe.systemsList()) {
             lineWriter.writeLine("* %s", wikiContext.wikiLink(system));
         }
 
@@ -376,14 +375,14 @@ public class FeatDoc {
         Effect effect = (Effect) causalTree.getCauseAndEffect();
         final String effectStr;
         if(effect.message().isOutgoing()) {
-            effectStr = String.format("%s%s %s %s ... "+debug("3"),
-                    (cause!=null&&cause.message().isOutgoing()?"... ":"")+ wikiContext.wikiLink(effect.system()),
+            effectStr = String.format("%s %s %s %s ... "+debug("3"),
+                    (cause!=null&&cause.message().isOutgoing()?"... ":"") + wikiContext.wikiLink(effect.system()),
                     bold(effect.message().name()),
                     comment(effect),
                     arrow(effect.message().timing())
             );
         } else {
-            effectStr = String.format("%s%s%s%s: %s "+debug("4"),
+            effectStr = String.format("%s %s%s%s: %s "+debug("4"),
                     (cause!=null&&cause.message().isOutgoing()?"... ":"")+ wikiContext.wikiLink(effect.system()),
                     comment(effect),
                     arrow(effect.message().timing()),

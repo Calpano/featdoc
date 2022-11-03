@@ -53,25 +53,7 @@ System o-- Message : The system, \nwhich defines \nthe contract
 ....
 
 === Message
-A message is produced by one system and consumed by zero or more systems.
 
-.Owner
-A message is **owned** by a system.
-This system is the owner of the API, e.g. the vendor of the system
-defines the message structure and contents. Also, the vendor will
-likely provides API docs for the message.
-
-.Kinds of Messages
-[%header,cols="e,e,a"]
-|===
-| Direction | Timing | Examples
-.2+| incoming .2+| synchronous | A request/API call in a REST API
-| A user interface input (e.g. click)
-.2+| outgoing .2+| synchronous | A REST Callback, also called Web Hook
-| A user interface result
-| incoming | asynchronous | An incoming event
-| outgoing | asynchronous | An outgoing event
-|===
 
 This allows to represent 4 integration patterns:
 

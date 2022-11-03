@@ -7,6 +7,7 @@ import de.xam.featdoc.CausalTree;
 import de.xam.featdoc.markdown.StringTree;
 import de.xam.featdoc.mermaid.sequence.Arrow;
 import de.xam.featdoc.mermaid.sequence.SequenceDiagram;
+import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -21,10 +22,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static de.xam.featdoc.Util.add;
+import static org.slf4j.LoggerFactory.getLogger;
 
 public class Universe {
 
@@ -88,7 +89,7 @@ public class Universe {
     }
 
     public static List<CausalTree> toCausalTrees(Scenario scenario) {
-        return scenario.steps().stream().map(Universe::toCausalTree).collect(Collectors.toList());
+        return scenario.steps().stream().map(Universe::toCausalTree).toList();
     }
 
     public List<ResultStep> computeResultingSteps(Scenario scenario) {
@@ -101,30 +102,60 @@ public class Universe {
     }
 
     public Stream<Feature> features() {
-        return systems().stream().flatMap(system -> system.featureList.stream());
+        return systemsList().stream().flatMap(system -> system.featureList.stream());
     }
 
     public Stream<Feature> featuresProducing(Message message) {
         return systems.stream().flatMap(system -> system.features().stream()).filter(feature -> feature.isProducing(message));
     }
 
-    public void forEachEdge(BiConsumer<System, System> source_target) {
-        scenarios().stream().flatMap(scenario -> scenario.steps().stream()).forEach(scenarioStep -> source_target.accept(scenarioStep.sourceSystem(), scenarioStep.message().system()));
+    private static final Logger log = getLogger(Universe.class);
 
-        systems().stream().flatMap(System::rules).forEach(rule -> rule.actions().forEach(target -> source_target.accept(rule.trigger().message().system(), target.message().system())));
+    /**
+     * Any call from a system to another system. From scenarios or system feature rules.
+     * @param source_target receives the pairs
+     */
+    public void forEachEdge(BiConsumer<System, System> source_target) {
+        scenariosList().stream().flatMap(scenario ->
+                scenario.steps().stream())
+                .forEach(scenarioStep -> {
+                            System source = scenarioStep.sourceSystem();
+                            System target = scenarioStep.message().system();
+                            log.trace("EDGE ("+source.label+","+target.label+") from scenario "+scenarioStep.scenario().label());
+                            source_target.accept(source,target);
+                        });
+
+        systemsList().stream().flatMap(System::rules)
+                .forEach(rule ->
+                        rule.actions().forEach(action -> {
+                            System source = rule.trigger().message().system();
+                            System intermediate = rule.feature().system();
+                            System target = action.message().system();
+
+                            if(rule.trigger().message().isIncoming()) {
+                                // no edge
+                            } else {
+                                // another system emitted the message
+                                log.trace("EDGE ("+source.label+","+intermediate.label+") from rule trigger in  "+rule.feature().label+" of "+rule.feature().system().label);
+                                source_target.accept(source,intermediate);
+                            }
+
+                            log.trace("EDGE ("+intermediate.label+","+target.label+") from rule action in  "+rule.feature().label+" of "+rule.feature().system().label);
+                            source_target.accept(intermediate,target);
+                        }));
     }
 
     public void forEachResultingAction(Message message, BiConsumer<Rule, Rule.Action> rule_action, boolean transitive) {
         rules().filter(rule -> rule.trigger().isTriggeredBy(message))
-                .forEach(rule -> {
-                    rule.actions().forEach(action -> {
-                        rule_action.accept(rule, action);
-                        if (transitive) {
-                            //RECURSE
-                            forEachResultingAction(action.message(), rule_action, transitive);
-                        }
-                    });
-                });
+                .forEach(rule ->
+                        rule.actions().forEach(action -> {
+                            rule_action.accept(rule, action);
+                            if (transitive) {
+                                //RECURSE
+                                forEachResultingAction(action.message(), rule_action, transitive);
+                            }
+                        })
+                );
     }
 
     public Scenario scenario(String title) {
@@ -136,7 +167,7 @@ public class Universe {
         return scenarios.stream().flatMap(scenario -> scenario.steps().stream()).filter(scenarioStep -> scenarioStep.message().equals(message));
     }
 
-    public List<Scenario> scenarios() {
+    public List<Scenario> scenariosList() {
         return scenarios;
     }
 
@@ -148,7 +179,7 @@ public class Universe {
         return add(systems, new System(id, name, wikiName, sortOrder));
     }
 
-    public List<System> systems() {
+    public List<System> systemsList() {
         return Collections.unmodifiableList(systems);
     }
 
@@ -252,7 +283,7 @@ public class Universe {
     }
 
     private Stream<Rule> rules() {
-        return systems().stream().flatMap(System::rules);
+        return systemsList().stream().flatMap(System::rules);
     }
 
     /**
