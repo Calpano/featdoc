@@ -1,5 +1,11 @@
 = Featdoc - Feature Documentation as Code
 :toc:
+ifdef::env-github[]
+:imagesdir: https://github.com/Calpano/featdoc
+endif::[]
+ifndef::env-github[]
+:imagesdir: ./
+endif::[]
 
 featdoc
 
@@ -43,7 +49,11 @@ Systems.UNIVERSE.scenario("Lunch-Customer (in a hurry)")
 
 .The World of Coffee
 ****
-[plantuml]
+ifdef::env-github[]
+image::world-of-coffee.svg[]
+endif::[]
+ifndef::env-github[]
+[plantuml, world-of-coffee, svg]
 ....
 hide circles
 hide empty members
@@ -59,6 +69,7 @@ Waiter --> CoffeeMachine : actual coffee making
 MOC --> POS : stores all orders
 POS --> ACC : taxes, stock
 ....
+endif::[]
 
 Compare the hand-drawn domain image with the https://dev.azure.com/itmv/Coffee%20Shop/_wiki/wikis/Coffee-Shop.wiki/3/FeatDoc[featdoc auto-generated system diagram].
 ****
@@ -108,6 +119,10 @@ Rules are grouped into features. This just makes organising them easier.
 
 +
 .Rule
+ifdef::env-github[]
+image::rule.svg[]
+endif::[]
+ifndef::env-github[]
 [plantuml,rule,svg]
 ....
 hide circles
@@ -126,6 +141,9 @@ class Action {
 Trigger "1" -> "n" Action : rule
 }
 ....
+endif::[]
+
+
 
 . A **scenario** now merely defines an initial **trigger**, causing a chain reaction of systems sending messages to each other. As one rule can cause several actions, the result can be rendered tree-like or as a sequence diagram.
 
