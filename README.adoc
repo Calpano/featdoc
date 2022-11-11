@@ -1,7 +1,7 @@
 = Featdoc - Feature Documentation as Code
 :toc:
 ifdef::env-github[]
-:imagesdir: https://github.com/Calpano/featdoc
+:imagesdir: https://github.com/Calpano/featdoc/blob/main
 endif::[]
 ifndef::env-github[]
 :imagesdir: ./
